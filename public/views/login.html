@@ -3,9 +3,9 @@
     <head>
         <!-- Title and Icon -->
 
-        <title>MiroTalk P2P - Host Protected login required.</title>
-        <link rel="shortcut icon" href="../images/logo.svg" />
-        <link rel="apple-touch-icon" href="../images/logo.svg" />
+        <title id="loginTitle">MiroTalk - Host Protected login required.</title>
+        <link id="shortcutIcon" rel="shortcut icon" href="../images/logo.svg" />
+        <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
 
         <!-- Meta Information -->
 
@@ -42,12 +42,13 @@
         <!-- Js scripts -->
 
         <script async src="../js/umami.js"></script>
+
         <script src="https://unpkg.com/animejs@3.0.1/lib/anime.min.js"></script>
         <script src="https://unpkg.com/scrollreveal@4.0.0/dist/scrollreveal.min.js"></script>
 
         <!-- xss -->
 
-        <script src="https://rawgit.com/leizongmin/js-xss/master/dist/xss.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
 
         <!-- axios -->
 
@@ -59,18 +60,7 @@
                 <div class="container">
                     <div class="site-header-inner">
                         <div class="brand">
-                            <div class="m-0">
-                                <a href="/">
-                                    <!-- <img src="../images/logo.svg" alt="MiroTalk P2P" width="32" height="32" /> -->
-                                    <img
-                                        src="../images/mirotalk-mc.png"
-                                        alt="MiroTalk P2P"
-                                        width="96"
-                                        height="auto"
-                                        style="margin-top: 80px"
-                                    />
-                                </a>
-                            </div>
+                            <div class="m-0"></div>
                         </div>
                     </div>
                 </div>
@@ -91,7 +81,6 @@
                                                     type="name"
                                                     placeholder="Username"
                                                     maxlength="32"
-                                                    style="border-radius: 6px"
                                                     required
                                                 />
                                             </div>
@@ -102,7 +91,6 @@
                                                     class="form-input"
                                                     type="password"
                                                     maxlength="32"
-                                                    style="border-radius: 6px"
                                                     placeholder="Password"
                                                     required
                                                 />
@@ -116,87 +104,6 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <script>
-                                            console.log(window.location);
-
-                                            const usernameInput = document.getElementById('username');
-                                            const passwordInput = document.getElementById('password');
-                                            const loginBtn = document.getElementById('loginButton');
-
-                                            usernameInput.onkeyup = (e) => {
-                                                if (e.keyCode === 13) {
-                                                    e.preventDefault();
-                                                    login();
-                                                }
-                                            };
-                                            passwordInput.onkeyup = (e) => {
-                                                if (e.keyCode === 13) {
-                                                    e.preventDefault();
-                                                    login();
-                                                }
-                                            };
-
-                                            loginBtn.onclick = (e) => {
-                                                login();
-                                            };
-
-                                            function login() {
-                                                let username = filterXSS(document.getElementById('username').value);
-                                                let password = filterXSS(document.getElementById('password').value);
-
-                                                // http://localhost:3000/join/?room=test
-                                                // http://localhost:3000/join/?room=test&name=mirotalk&audio=0&video=0&screen=0&notify=0
-                                                const qs = new URLSearchParams(window.location.search);
-                                                const room = filterXSS(qs.get('room'));
-
-                                                // http://localhost:3000/join/test
-                                                const pathParts = window.location.pathname.split('/');
-                                                const roomPath = pathParts[pathParts.length - 1];
-
-                                                if (username && password) {
-                                                    axios
-                                                        .post('/login', {
-                                                            username: username,
-                                                            password: password,
-                                                        })
-                                                        .then(function (response) {
-                                                            console.log(response);
-
-                                                            // Store in session
-                                                            window.sessionStorage.peer_username = username;
-                                                            window.sessionStorage.peer_password = password;
-
-                                                            if (room) {
-                                                                return (window.location.href =
-                                                                    '/join/' + window.location.search);
-                                                            }
-
-                                                            if (roomPath) {
-                                                                return (window.location.href = '/join/' + roomPath);
-                                                            }
-
-                                                            return (window.location.href = '/logged');
-                                                        })
-                                                        .catch(function (error) {
-                                                            console.error(error);
-                                                            alert('Unauthorized');
-                                                        });
-                                                    return;
-                                                }
-                                                if (!username && !password) {
-                                                    alert('Username and Password required');
-                                                    return;
-                                                }
-                                                if (!username) {
-                                                    alert('Username required');
-                                                    return;
-                                                }
-                                                if (!password) {
-                                                    alert('Password required');
-                                                    return;
-                                                }
-                                            }
-                                        </script>
                                     </div>
                                 </div>
                             </div>
@@ -205,13 +112,11 @@
                 </section>
             </main>
 
-            <footer class="site-footer center-content-mobile">
+            <footer id="footer" class="site-footer center-content-mobile">
                 <div class="container">
                     <div class="site-footer-inner">
                         <div class="footer-top space-between text-xxs">
-                            <div class="brand">
-                                <a href="/"><img src="../images/logo.svg" alt="Neon" width="32" height="32" /></a>
-                            </div>
+                            <div class="brand"></div>
                             <div class="footer-social">
                                 <ul class="list-reset">
                                     <li class="footer-social-icon">
@@ -311,19 +216,24 @@
                                         <a href="/privacy">Privacy Policy</a>
                                     </li>
                                     <li>
+                                        <a href="https://p2p.mirotalk.com/api/v1/docs/">Rest API</a>
+                                    </li>
+                                    <li>
                                         <a target="_blank" href="https://www.linkedin.com/in/miroslav-pejic-976a07101/"
                                             >Contact: Miroslav Pejic</a
                                         >
                                     </li>
                                 </ul>
                             </nav>
-                            <div class="footer-copyright">&copy; 2023 MiroTalk, all rights reserved</div>
+                            <div class="footer-copyright">&copy; 2024 MiroTalk, all rights reserved</div>
                         </div>
                     </div>
                 </div>
             </footer>
         </div>
 
+        <script defer src="../js/login.js"></script>
+        <script defer src="../js/brand.js"></script>
         <script defer src="../js/landing.js"></script>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
     </body>

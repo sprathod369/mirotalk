@@ -1,4 +1,4 @@
-'use-strict';
+'use strict';
 
 class LocalStorage {
     constructor() {
@@ -20,19 +20,21 @@ class LocalStorage {
             mic_auto_gain_control: false,
             mic_echo_cancellations: true,
             mic_noise_suppression: true,
-            mic_sample_rate: '0', // 0: 48000 Hz 1: 44100 Hz
-            mic_sample_size: '0', // 0: 16 bits 1: 32 bits
-            mic_channel_count: '0', // 0: 1(mono) 1: 2 (stereo)
-            mic_latency: '50', // ms
-            mic_volume: '100', // %
-            video_fps: '1', // default 30fps
-            screen_fps: '1', // default 30fps
+            mic_sample_rate: 0, // 0: 48000 Hz 1: 44100 Hz
+            mic_sample_size: 0, // 0: 16 bits 1: 32 bits
+            mic_channel_count: 0, // 0: 1(mono) 1: 2 (stereo)
+            mic_latency: 50, // ms
+            mic_volume: 100, // %
+            video_fps: 1, // default 30fps
+            screen_fps: 1, // default 30fps
             pitch_bar: true,
             sounds: true,
-            video_obj_fit: '2', // cover
-            theme: '0', // dark
-            buttons_bar: '0', // vertical
-            pin_grid: '0', // vertical
+            video_obj_fit: 2, // cover
+            theme: 0, // dark
+            theme_color: '#000000', // custom theme color
+            theme_custom: false, // keep custom theme
+            buttons_bar: 0, // vertical
+            pin_grid: 0, // vertical
         };
 
         this.DEVICES_COUNT = {
@@ -84,6 +86,8 @@ class LocalStorage {
                 break;
             case this.MEDIA_TYPE.video:
                 this.P2P_INIT_CONFIG.video = status;
+                break;
+            default:
                 break;
         }
         this.setObjectLocalStorage('P2P_INIT_CONFIG', this.P2P_INIT_CONFIG);

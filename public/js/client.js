@@ -15,7 +15,7 @@
  * @license For commercial use or closed source, contact us at license.mirotalk@gmail.com or purchase directly from CodeCanyon
  * @license CodeCanyon: https://codecanyon.net/item/mirotalk-p2p-webrtc-realtime-video-conferences/38376661
  * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.2.66
+ * @version 1.4.22
  *
  */
 
@@ -33,6 +33,7 @@ const myRoomUrl = window.location.origin + '/join/' + roomId; // share room url
 
 // Images
 const images = {
+    caption: '../images/caption.png',
     confirmation: '../images/image-placeholder.png',
     share: '../images/share.png',
     locked: '../images/locked.png',
@@ -48,6 +49,7 @@ const images = {
     forbidden: '../images/forbidden.png',
     avatar: '../images/mirotalk-logo.png',
     recording: '../images/recording.png',
+    poster: '../images/loader.gif',
 }; // nice free icon: https://www.iconfinder.com
 
 const className = {
@@ -65,6 +67,7 @@ const className = {
     privacy: 'far fa-circle',
     snapShot: 'fas fa-camera-retro',
     pinUnpin: 'fas fa-map-pin',
+    mirror: 'fas fa-arrow-right-arrow-left',
     zoomIn: 'fas fa-magnifying-glass-plus',
     zoomOut: 'fas fa-magnifying-glass-minus',
     fullScreen: 'fas fa-expand',
@@ -84,6 +87,9 @@ const className = {
     speech: 'fas fa-volume-high',
     heart: 'fas fa-heart',
     pip: 'fas fa-images',
+    hideAll: 'fas fa-eye',
+    up: 'fas fa-chevron-up',
+    down: 'fas fa-chevron-down',
 };
 // https://fontawesome.com/search?o=r&m=free
 
@@ -97,6 +103,7 @@ const icons = {
     fileSend: '<i class="fas fa-file-export"></i>',
     fileReceive: '<i class="fas fa-file-import"></i>',
     codecs: '<i class="fa-solid fa-film"></i>',
+    theme: '<i class="fas fa-fill-drip"></i>',
 };
 
 // Whiteboard and fileSharing
@@ -104,10 +111,11 @@ const fileSharingInput = '*'; // allow all file extensions
 const Base64Prefix = 'data:application/pdf;base64,';
 const wbPdfInput = 'application/pdf';
 const wbImageInput = 'image/*';
-const wbWidth = 1200;
-const wbHeight = 600;
+const wbWidth = 1280;
+const wbHeight = 768;
 
 // Peer infos
+const extraInfo = getId('extraInfo');
 const userAgent = navigator.userAgent.toLowerCase();
 const detectRtcVersion = DetectRTC.version;
 const isWebRTCSupported = DetectRTC.isWebRTCSupported;
@@ -120,6 +128,7 @@ const osVersion = DetectRTC.osVersion;
 const browserName = DetectRTC.browser.name;
 const browserVersion = DetectRTC.browser.version;
 const peerInfo = getPeerInfo();
+const thisInfo = getInfo();
 
 // Local Storage class
 const lS = new LocalStorage();
@@ -136,75 +145,6 @@ const showVideoPipBtn = document.pictureInPictureEnabled;
 // Check if Document PIP is supported by this browser
 const showDocumentPipBtn = !isEmbedded && 'documentPictureInPicture' in window;
 
-/**
- * Configuration for controlling the visibility of buttons in the MiroTalk P2P client.
- * Set properties to true to show the corresponding buttons, or false to hide them.
- * captionBtn, showSwapCameraBtn, showScreenShareBtn, showFullScreenBtn, showVideoPipBtn, showDocumentPipBtn -> (auto-detected).
- */
-const buttons = {
-    main: {
-        showShareRoomBtn: true,
-        showHideMeBtn: true,
-        showAudioBtn: true,
-        showVideoBtn: true,
-        showScreenBtn: true,
-        showRecordStreamBtn: true,
-        showChatRoomBtn: true,
-        showCaptionRoomBtn: true,
-        showRoomEmojiPickerBtn: true,
-        showMyHandBtn: true,
-        showWhiteboardBtn: true,
-        showFileShareBtn: true,
-        showDocumentPipBtn: showDocumentPipBtn,
-        showMySettingsBtn: true,
-        showAboutBtn: true, // Please keep me always true, Thank you!
-    },
-    chat: {
-        showMaxBtn: true,
-        showSaveMessageBtn: true,
-        showMarkDownBtn: true,
-        showChatGPTBtn: true,
-        showFileShareBtn: true,
-        showShareVideoAudioBtn: true,
-        showParticipantsBtn: true,
-    },
-    caption: {
-        showMaxBtn: true,
-    },
-    settings: {
-        showMicOptionsBtn: true,
-        showTabRoomPeerName: true,
-        showTabRoomParticipants: true,
-        showTabRoomSecurity: true,
-        showMuteEveryoneBtn: true,
-        showHideEveryoneBtn: true,
-        showEjectEveryoneBtn: true,
-        showLockRoomBtn: true,
-        showUnlockRoomBtn: true,
-    },
-    remote: {
-        showAudioVolume: true,
-        audioBtnClickAllowed: true,
-        videoBtnClickAllowed: true,
-        showKickOutBtn: true,
-        showSnapShotBtn: true,
-        showFileShareBtn: true,
-        showShareVideoAudioBtn: true,
-        showPrivateMessageBtn: true,
-        showZoomInOutBtn: false,
-        showVideoPipBtn: showVideoPipBtn,
-    },
-    local: {
-        showSnapShotBtn: true,
-        showVideoCircleBtn: true,
-        showZoomInOutBtn: false,
-        showVideoPipBtn: showVideoPipBtn,
-    },
-    whiteboard: {
-        whiteboardLockBtn: false,
-    },
-};
-
 // Loading div
 const loadingDiv = getId('loadingDiv');
 
@@ -220,29 +160,37 @@ const initVideo = getId('initVideo');
 const initVideoBtn = getId('initVideoBtn');
 const initAudioBtn = getId('initAudioBtn');
 const initScreenShareBtn = getId('initScreenShareBtn');
+const initVideoMirrorBtn = getId('initVideoMirrorBtn');
+const initUsernameEmojiButton = getId('initUsernameEmojiButton');
 const initVideoSelect = getId('initVideoSelect');
 const initMicrophoneSelect = getId('initMicrophoneSelect');
 const initSpeakerSelect = getId('initSpeakerSelect');
+const usernameEmoji = getId('usernameEmoji');
 
 // Buttons bar
 const buttonsBar = getId('buttonsBar');
 const shareRoomBtn = getId('shareRoomBtn');
-const hideMeBtn = getId('hideMeBtn');
-const videoBtn = getId('videoBtn');
-const swapCameraBtn = getId('swapCameraBtn');
-const audioBtn = getId('audioBtn');
-const screenShareBtn = getId('screenShareBtn');
 const recordStreamBtn = getId('recordStreamBtn');
 const fullScreenBtn = getId('fullScreenBtn');
 const chatRoomBtn = getId('chatRoomBtn');
 const captionBtn = getId('captionBtn');
 const roomEmojiPickerBtn = getId('roomEmojiPickerBtn');
-const myHandBtn = getId('myHandBtn');
 const whiteboardBtn = getId('whiteboardBtn');
+const snapshotRoomBtn = getId('snapshotRoomBtn');
 const fileShareBtn = getId('fileShareBtn');
 const documentPiPBtn = getId('documentPiPBtn');
 const mySettingsBtn = getId('mySettingsBtn');
 const aboutBtn = getId('aboutBtn');
+
+// Buttons bottom
+const bottomButtons = getId('bottomButtons');
+const toggleExtraBtn = getId('toggleExtraBtn');
+const audioBtn = getId('audioBtn');
+const videoBtn = getId('videoBtn');
+const swapCameraBtn = getId('swapCameraBtn');
+const hideMeBtn = getId('hideMeBtn');
+const screenShareBtn = getId('screenShareBtn');
+const myHandBtn = getId('myHandBtn');
 const leaveRoomBtn = getId('leaveRoomBtn');
 
 // Room Emoji Picker
@@ -254,8 +202,11 @@ const userEmoji = getId(`userEmoji`);
 // Chat room
 const msgerDraggable = getId('msgerDraggable');
 const msgerHeader = getId('msgerHeader');
+const msgerTogglePin = getId('msgerTogglePin');
 const msgerTheme = getId('msgerTheme');
 const msgerCPBtn = getId('msgerCPBtn');
+const msgerDropDownMenuBtn = getId('msgerDropDownMenuBtn');
+const msgerDropDownContent = getId('msgerDropDownContent');
 const msgerClean = getId('msgerClean');
 const msgerSaveBtn = getId('msgerSaveBtn');
 const msgerClose = getId('msgerClose');
@@ -333,10 +284,12 @@ const msgerCP = getId('msgerCP');
 const msgerCPHeader = getId('msgerCPHeader');
 const msgerCPCloseBtn = getId('msgerCPCloseBtn');
 const msgerCPList = getId('msgerCPList');
+const searchPeerBarName = getId('searchPeerBarName');
 
 // Caption section
 const captionDraggable = getId('captionDraggable');
 const captionHeader = getId('captionHeader');
+const captionTogglePin = getId('captionTogglePin');
 const captionTheme = getId('captionTheme');
 const captionMaxBtn = getId('captionMaxBtn');
 const captionMinBtn = getId('captionMinBtn');
@@ -344,6 +297,7 @@ const captionClean = getId('captionClean');
 const captionSaveBtn = getId('captionSaveBtn');
 const captionClose = getId('captionClose');
 const captionChat = getId('captionChat');
+const captionFooter = getId('captionFooter');
 
 // My settings
 const mySettings = getId('mySettings');
@@ -354,6 +308,11 @@ const tabVideoShareBtn = getId('tabVideoShareBtn');
 const tabRecordingBtn = getId('tabRecordingBtn');
 const tabParticipantsBtn = getId('tabParticipantsBtn');
 const tabProfileBtn = getId('tabProfileBtn');
+const tabNetworkBtn = getId('tabNetworkBtn');
+const networkIP = getId('networkIP');
+const networkHost = getId('networkHost');
+const networkStun = getId('networkStun');
+const networkTurn = getId('networkTurn');
 const tabRoomBtn = getId('tabRoomBtn');
 const roomSendEmailBtn = getId('roomSendEmailBtn');
 const tabStylingBtn = getId('tabStylingBtn');
@@ -391,6 +350,7 @@ const pinVideoPositionSelect = getId('pinVideoPositionSelect');
 const tabRoomPeerName = getId('tabRoomPeerName');
 const tabRoomParticipants = getId('tabRoomParticipants');
 const tabRoomSecurity = getId('tabRoomSecurity');
+const tabEmailInvitation = getId('tabEmailInvitation');
 const isPeerPresenter = getId('isPeerPresenter');
 const peersCount = getId('peersCount');
 const screenFpsDiv = getId('screenFpsDiv');
@@ -407,7 +367,7 @@ const micLatencyRange = getId('micLatencyRange');
 const micVolumeRange = getId('micVolumeRange');
 const applyAudioOptionsBtn = getId('applyAudioOptionsBtn');
 const micOptionsBtn = getId('micOptionsBtn');
-const micDropDownMenu = getSl('.dropdown-menu');
+const micDropDownMenu = getId('micDropDownMenu');
 const micLatencyValue = getId('micLatencyValue');
 const micVolumeValue = getId('micVolumeValue');
 
@@ -426,6 +386,8 @@ const whiteboardPencilBtn = getId('whiteboardPencilBtn');
 const whiteboardObjectBtn = getId('whiteboardObjectBtn');
 const whiteboardUndoBtn = getId('whiteboardUndoBtn');
 const whiteboardRedoBtn = getId('whiteboardRedoBtn');
+const whiteboardDropDownMenuBtn = getId('whiteboardDropDownMenuBtn');
+const whiteboardDropdownMenu = getId('whiteboardDropdownMenu');
 const whiteboardImgFileBtn = getId('whiteboardImgFileBtn');
 const whiteboardPdfFileBtn = getId('whiteboardPdfFileBtn');
 const whiteboardImgUrlBtn = getId('whiteboardImgUrlBtn');
@@ -438,9 +400,11 @@ const whiteboardSaveBtn = getId('whiteboardSaveBtn');
 const whiteboardEraserBtn = getId('whiteboardEraserBtn');
 const whiteboardCleanBtn = getId('whiteboardCleanBtn');
 const whiteboardLockBtn = getId('whiteboardLockBtn');
+const whiteboardUnlockBtn = getId('whiteboardUnlockBtn');
 const whiteboardCloseBtn = getId('whiteboardCloseBtn');
 
 // Room actions buttons
+const captionEveryoneBtn = getId('captionEveryoneBtn');
 const muteEveryoneBtn = getId('muteEveryoneBtn');
 const hideEveryoneBtn = getId('hideEveryoneBtn');
 const ejectEveryoneBtn = getId('ejectEveryoneBtn');
@@ -462,6 +426,7 @@ const receiveFilePercentage = getId('receiveFilePercentage');
 const receiveFileInfo = getId('receiveFileInfo');
 const receiveProgress = getId('receiveProgress');
 const receiveHideBtn = getId('receiveHideBtn');
+const receiveAbortBtn = getId('receiveAbortBtn');
 
 // Video/audio url player
 const videoUrlCont = getId('videoUrlCont');
@@ -478,6 +443,9 @@ const speechRecognitionIcon = getId('speechRecognitionIcon');
 const speechRecognitionStart = getId('speechRecognitionStart');
 const speechRecognitionStop = getId('speechRecognitionStop');
 
+// Media
+const sinkId = 'sinkId' in HTMLMediaElement.prototype;
+
 //....
 
 const userLimits = {
@@ -486,7 +454,7 @@ const userLimits = {
 };
 
 const isRulesActive = true; // Presenter can do anything, guest is slightly moderate, if false no Rules for the room.
-const forceCamMaxResolutionAndFps = false; // This force the webCam to max resolution as default, up to 4k and 60fps (very high bandwidth are required) if false, you can set it from settings
+const forceCamMaxResolutionAndFps = false; // This force the webCam to max resolution as default, up to 8k and 60fps (very high bandwidth are required) if false, you can set it from settings
 const useAvatarSvg = true; // if false the cam-Off avatar = images.avatar
 
 /**
@@ -497,18 +465,67 @@ const useAvatarSvg = true; // if false the cam-Off avatar = images.avatar
 const ZOOM_CENTER_MODE = false;
 const ZOOM_IN_OUT_ENABLED = true; // Video Zoom in/out default (true)
 
+// Color Picker:
+
+const themeCustom = {
+    input: getId('themeColorPicker'),
+    check: getId('keepCustomTheme'),
+    color: lsSettings.theme_color ? lsSettings.theme_color : '#000000',
+    keep: lsSettings.theme_custom ? lsSettings.theme_custom : false,
+};
+
+const pickr = Pickr.create({
+    el: themeCustom.input,
+    theme: 'classic', // or 'monolith', or 'nano'
+    default: themeCustom.color,
+    useAsButton: true,
+    swatches: [
+        'rgba(244, 67, 54, 1)',
+        'rgba(233, 30, 99, 0.95)',
+        'rgba(156, 39, 176, 0.9)',
+        'rgba(103, 58, 183, 0.85)',
+        'rgba(63, 81, 181, 0.8)',
+        'rgba(33, 150, 243, 0.75)',
+        'rgba(3, 169, 244, 0.7)',
+        'rgba(0, 188, 212, 0.7)',
+        'rgba(0, 150, 136, 0.75)',
+        'rgba(76, 175, 80, 0.8)',
+        'rgba(139, 195, 74, 0.85)',
+        'rgba(205, 220, 57, 0.9)',
+        'rgba(255, 235, 59, 0.95)',
+        'rgba(255, 193, 7, 1)',
+    ],
+    components: {
+        preview: true,
+        opacity: true,
+        hue: true,
+    },
+})
+    .on('init', (pickr) => {
+        themeCustom.input.value = pickr.getSelectedColor().toHEXA().toString(0);
+    })
+    .on('change', (color) => {
+        themeCustom.color = color.toHEXA().toString();
+        themeCustom.input.value = themeCustom.color;
+        setCustomTheme();
+    })
+    .on('changestop', () => {
+        lsSettings.theme_color = themeCustom.color;
+        lS.setSettings(lsSettings);
+    });
+
 // misc
 let swBg = 'rgba(0, 0, 0, 0.7)'; // swAlert background color
 let callElapsedTime; // count time
 let mySessionTime; // conference session time
 let isDocumentOnFullScreen = false;
+let isToggleExtraBtnClicked = false;
 
 // peer
 let myPeerId; // This socket.id
 let myPeerUUID = getUUID(); // Unique peer id
 let myPeerName = getPeerName();
-let myUsername = getPeerUsername(); // default false if not passed by query params
-let myPassword = getPeerPassword(); // default false if not passed by query params
+let myToken = getPeerToken(); // peer JWT
 let isPresenter = false; // True Who init the room (aka first peer joined)
 let myHandStatus = false;
 let myVideoStatus = false;
@@ -545,9 +562,10 @@ let localAudioMediaStream; // my microphone
 let peerVideoMediaElements = {}; // keep track of our peer <video> tags, indexed by peer_id_video
 let peerAudioMediaElements = {}; // keep track of our peer <audio> tags, indexed by peer_id_audio
 
-// main buttons
+// main and bottom buttons
 let mainButtonsBarPosition = 'vertical'; // vertical - horizontal
 let placement = 'right'; // https://atomiks.github.io/tippyjs/#placements
+let bottomButtonsPlacement = 'right';
 let isButtonsVisible = false;
 let isButtonsBarOver = false;
 
@@ -578,6 +596,8 @@ let leftChatAvatar;
 let rightChatAvatar;
 let chatMessagesId = 0;
 let showChatOnMessage = true;
+let isChatPinned = false;
+let isCaptionPinned = false;
 let isChatRoomVisible = false;
 let isCaptionBoxVisible = false;
 let isChatEmojiVisible = false;
@@ -588,6 +608,7 @@ let speechInMessages = false;
 let isSpeechSynthesisSupported = 'speechSynthesis' in window;
 let transcripts = []; // collect all the transcripts to save it later if you need
 let chatMessages = []; // collect chat messages to save it later if want
+let chatGPTcontext = []; // keep chatGPT messages context
 
 // settings
 let videoMaxFrameRate = 30;
@@ -682,15 +703,16 @@ function setButtonsToolTip() {
     if (isMobileDevice) return;
     // Init buttons
     setTippy(initScreenShareBtn, 'Toggle screen sharing', 'top');
+    setTippy(initVideoMirrorBtn, 'Toggle video mirror', 'top');
+    setTippy(initUsernameEmojiButton, 'Toggle username emoji', 'top');
     // Main buttons
     refreshMainButtonsToolTipPlacement();
     // Chat room buttons
     setTippy(msgerClose, 'Close', 'bottom');
     setTippy(msgerShowChatOnMsgDiv, 'Show chat when you receive a new message', 'bottom');
     setTippy(msgerSpeechMsgDiv, 'Speech the incoming messages', 'bottom');
+    setTippy(msgerTogglePin, 'Toggle chat pin', 'bottom');
     setTippy(msgerTheme, 'Ghost theme', 'bottom');
-    setTippy(msgerClean, 'Clean the messages', 'bottom');
-    setTippy(msgerSaveBtn, 'Save the messages', 'bottom');
     setTippy(msgerMaxBtn, 'Maximize', 'bottom');
     setTippy(msgerMinBtn, 'Minimize', 'bottom');
     setTippy(msgerEmojiBtn, 'Emoji', 'top');
@@ -707,6 +729,7 @@ function setButtonsToolTip() {
     setTippy(captionClose, 'Close', 'bottom');
     setTippy(captionMaxBtn, 'Maximize', 'bottom');
     setTippy(captionMinBtn, 'Minimize', 'bottom');
+    setTippy(captionTogglePin, 'Toggle caption pin', 'bottom');
     setTippy(captionTheme, 'Ghost theme', 'bottom');
     setTippy(captionClean, 'Clean the messages', 'bottom');
     setTippy(captionSaveBtn, 'Save the messages', 'bottom');
@@ -730,7 +753,26 @@ function setButtonsToolTip() {
         'Prioritize h.264 with AAC or h.264 with Opus codecs over VP8 with Opus or VP9 with Opus codecs',
         'right',
     );
+    setTippy(networkIP, 'IP address associated with the ICE candidate', 'right');
+    setTippy(
+        networkHost,
+        'This type of ICE candidate represents a candidate that corresponds to an interface on the local device. Host candidates are typically generated based on the local IP addresses of the device and can be used for direct peer-to-peer communication within the same network',
+        'right',
+    );
+    setTippy(
+        networkStun,
+        'Server reflexive candidates are obtained by the ICE agent when it sends a request to a STUN (Session Traversal Utilities for NAT) server. These candidates reflect the public IP address and port of the client as observed by the STUN server. They are useful for traversing NATs (Network Address Translators) and establishing connectivity between peers across different networks',
+        'right',
+    );
+    setTippy(
+        networkTurn,
+        'Relay candidates are obtained when communication between peers cannot be established directly due to symmetric NATs or firewall restrictions. In such cases, communication is relayed through a TURN (Traversal Using Relays around NAT) server. TURN servers act as intermediaries, relaying data between peers, allowing them to communicate even when direct connections are not possible. This is typically the fallback mechanism for establishing connectivity when direct peer-to-peer communication fails',
+        'right',
+    );
     // Whiteboard buttons
+    setTippy(whiteboardLockBtn, 'Toggle Lock whiteboard', 'right');
+    setTippy(whiteboardUnlockBtn, 'Toggle Lock whiteboard', 'right');
+    setTippy(whiteboardCloseBtn, 'Close', 'right');
     setTippy(wbDrawingColorEl, 'Drawing color', 'bottom');
     setTippy(whiteboardGhostButton, 'Toggle transparent background', 'bottom');
     setTippy(wbBackgroundColorEl, 'Background color', 'bottom');
@@ -738,22 +780,10 @@ function setButtonsToolTip() {
     setTippy(whiteboardObjectBtn, 'Object mode', 'bottom');
     setTippy(whiteboardUndoBtn, 'Undo', 'bottom');
     setTippy(whiteboardRedoBtn, 'Redo', 'bottom');
-    setTippy(whiteboardImgFileBtn, 'Add image from file', 'bottom');
-    setTippy(whiteboardPdfFileBtn, 'Add pdf from file', 'bottom');
-    setTippy(whiteboardImgUrlBtn, 'Add image from URL', 'bottom');
-    setTippy(whiteboardTextBtn, 'Add the text', 'bottom');
-    setTippy(whiteboardLineBtn, 'Add the line', 'bottom');
-    setTippy(whiteboardRectBtn, 'Add the rectangle', 'bottom');
-    setTippy(whiteboardTriangleBtn, 'Add triangle', 'bottom');
-    setTippy(whiteboardCircleBtn, 'Add the circle', 'bottom');
-    setTippy(whiteboardSaveBtn, 'Save the board', 'bottom');
-    setTippy(whiteboardEraserBtn, 'Erase the object', 'bottom');
-    setTippy(whiteboardCleanBtn, 'Clean the board', 'bottom');
-    setTippy(whiteboardLockBtn, 'If enabled, participants cannot interact', 'right');
-    setTippy(whiteboardCloseBtn, 'Close', 'right');
     // Suspend/Hide File transfer buttons
-    setTippy(sendAbortBtn, 'Abort file transfer', 'right-start');
-    setTippy(receiveHideBtn, 'Hide file transfer', 'right-start');
+    setTippy(sendAbortBtn, 'Abort file transfer', 'bottom');
+    setTippy(receiveAbortBtn, 'Abort file transfer', 'bottom');
+    setTippy(receiveHideBtn, 'Hide file transfer', 'bottom');
     // Video/audio URL player
     setTippy(videoUrlCloseBtn, 'Close the video player', 'bottom');
     setTippy(videoAudioCloseBtn, 'Close the video player', 'bottom');
@@ -767,25 +797,33 @@ function setButtonsToolTip() {
 function refreshMainButtonsToolTipPlacement() {
     // not need for mobile
     if (isMobileDevice) return;
-    // main buttons
+
+    // ButtonsBar
     placement = btnsBarSelect.options[btnsBarSelect.selectedIndex].value == 'vertical' ? 'right' : 'top';
-    setTippy(shareRoomBtn, 'Invite others to join', placement);
+
+    // BottomButtons
+    bottomButtonsPlacement = btnsBarSelect.options[btnsBarSelect.selectedIndex].value == 'vertical' ? 'top' : 'right';
+
+    setTippy(shareRoomBtn, 'Share the Room', placement);
     setTippy(hideMeBtn, 'Toggle hide myself from the room view', placement);
-    setTippy(audioBtn, useAudio ? 'Stop the audio' : 'My audio is disabled', placement);
-    setTippy(videoBtn, useVideo ? 'Stop the video' : 'My video is disabled', placement);
-    setTippy(screenShareBtn, 'Start screen sharing', placement);
     setTippy(recordStreamBtn, 'Start recording', placement);
     setTippy(fullScreenBtn, 'View full screen', placement);
-    setTippy(chatRoomBtn, 'Open the chat', placement);
     setTippy(captionBtn, 'Open the caption', placement);
     setTippy(roomEmojiPickerBtn, 'Send reaction', placement);
-    setTippy(myHandBtn, 'Raise your hand', placement);
     setTippy(whiteboardBtn, 'Open the whiteboard', placement);
+    setTippy(snapshotRoomBtn, 'Snapshot screen, windows or tab', placement);
     setTippy(fileShareBtn, 'Share file', placement);
     setTippy(documentPiPBtn, 'Toggle picture in picture', placement);
     setTippy(mySettingsBtn, 'Open the settings', placement);
     setTippy(aboutBtn, 'About this project', placement);
-    setTippy(leaveRoomBtn, 'Leave this room', placement);
+
+    setTippy(toggleExtraBtn, 'Toggle extra buttons', bottomButtonsPlacement);
+    setTippy(audioBtn, useAudio ? 'Stop the audio' : 'My audio is disabled', bottomButtonsPlacement);
+    setTippy(videoBtn, useVideo ? 'Stop the video' : 'My video is disabled', bottomButtonsPlacement);
+    setTippy(screenShareBtn, 'Start screen sharing', bottomButtonsPlacement);
+    setTippy(myHandBtn, 'Raise your hand', bottomButtonsPlacement);
+    setTippy(chatRoomBtn, 'Open the chat', bottomButtonsPlacement);
+    setTippy(leaveRoomBtn, 'Leave this room', bottomButtonsPlacement);
 }
 
 /**
@@ -800,10 +838,14 @@ function setTippy(element, content, placement) {
         if (element._tippy) {
             element._tippy.destroy();
         }
-        tippy(element, {
-            content: content,
-            placement: placement,
-        });
+        try {
+            tippy(element, {
+                content: content,
+                placement: placement,
+            });
+        } catch (err) {
+            console.error('setTippy error', err.message);
+        }
     } else {
         console.warn('setTippy element not found with content', content);
     }
@@ -827,6 +869,48 @@ function getPeerInfo() {
         browserName: browserName,
         browserVersion: browserVersion,
     };
+}
+
+/**
+ * Get Extra info
+ * @returns object info
+ */
+function getInfo() {
+    const parser = new UAParser(userAgent);
+
+    try {
+        const parserResult = parser.getResult();
+        console.log('Info', parserResult);
+
+        // Filter out properties with 'Unknown' values
+        const filterUnknown = (obj) => {
+            const filtered = {};
+            for (const [key, value] of Object.entries(obj)) {
+                if (value && value !== 'Unknown') {
+                    filtered[key] = value;
+                }
+            }
+            return filtered;
+        };
+
+        const filteredResult = {
+            //ua: parserResult.ua,
+            browser: filterUnknown(parserResult.browser),
+            cpu: filterUnknown(parserResult.cpu),
+            device: filterUnknown(parserResult.device),
+            engine: filterUnknown(parserResult.engine),
+            os: filterUnknown(parserResult.os),
+        };
+
+        // Convert the filtered result to a readable JSON string
+        const resultString = JSON.stringify(filteredResult, null, 2);
+
+        extraInfo.innerText = resultString;
+
+        return parserResult;
+    } catch (error) {
+        console.error('Error parsing user agent:', error);
+    }
 }
 
 /**
@@ -916,35 +1000,19 @@ function getNotify() {
 }
 
 /**
- * Get Peer username
- * @returns {mixed} boolean false or username string
+ * Get Peer JWT
+ * @returns {mixed} boolean false or token string
  */
-function getPeerUsername() {
-    if (window.sessionStorage.peer_username) return window.sessionStorage.peer_username;
+function getPeerToken() {
+    if (window.sessionStorage.peer_token) return window.sessionStorage.peer_token;
     let qs = new URLSearchParams(window.location.search);
-    let username = filterXSS(qs.get('username'));
-    let queryUsername = false;
-    if (username) {
-        queryUsername = username;
+    let token = filterXSS(qs.get('token'));
+    let queryToken = false;
+    if (token) {
+        queryToken = token;
     }
-    console.log('Direct join', { username: queryUsername });
-    return queryUsername;
-}
-
-/**
- * Get Peer password
- * @returns {mixed} boolean false or password string
- */
-function getPeerPassword() {
-    if (window.sessionStorage.peer_password) return window.sessionStorage.peer_password;
-    let qs = new URLSearchParams(window.location.search);
-    let password = filterXSS(qs.get('password'));
-    let queryPassword = false;
-    if (password) {
-        queryPassword = password;
-    }
-    console.log('Direct join', { password: queryPassword });
-    return queryPassword;
+    console.log('Direct join', { token: queryToken });
+    return queryToken;
 }
 
 /**
@@ -1013,6 +1081,13 @@ function countPeerConnections() {
 }
 
 /**
+ * Get Started...
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    initClientPeer();
+});
+
+/**
  * On body load Get started
  */
 function initClientPeer() {
@@ -1071,9 +1146,11 @@ function initClientPeer() {
     signalingSocket.on('message', handleMessage);
     signalingSocket.on('wbCanvasToJson', handleJsonToWbCanvas);
     signalingSocket.on('whiteboardAction', handleWhiteboardAction);
+    signalingSocket.on('caption', handleCaptionActions);
     signalingSocket.on('kickOut', handleKickedOut);
     signalingSocket.on('fileInfo', handleFileInfo);
     signalingSocket.on('fileAbort', handleFileAbort);
+    signalingSocket.on('fileReceiveAbort', handleAbortFileTransfer);
     signalingSocket.on('videoPlayer', handleVideoPlayer);
     signalingSocket.on('disconnect', handleDisconnect);
     signalingSocket.on('removePeer', handleRemovePeer);
@@ -1122,7 +1199,9 @@ async function handleConnect() {
         }
         getHtmlElementsById();
         setButtonsToolTip();
-        manageLeftButtons();
+        handleUsernameEmojiPicker();
+        await getButtons();
+        manageButtons();
         handleButtonsRule();
         setupMySettings();
         loadSettingsFromLocalStorage();
@@ -1227,18 +1306,22 @@ function roomIsBusy() {
 function handleRules(isPresenter) {
     console.log('14. Peer isPresenter: ' + isPresenter + ' Reconnected to signaling server: ' + isPeerReconnected);
     if (!isPresenter) {
+        //buttons.main.showShareRoomBtn = false;
         buttons.settings.showMicOptionsBtn = false;
         buttons.settings.showTabRoomParticipants = false;
         buttons.settings.showTabRoomSecurity = false;
+        buttons.settings.showTabEmailInvitation = false;
         // buttons.remote.audioBtnClickAllowed = false;
         // buttons.remote.videoBtnClickAllowed = false;
         buttons.remote.showKickOutBtn = false;
         buttons.whiteboard.whiteboardLockBtn = false;
         //...
     } else {
+        buttons.main.showShareRoomBtn = true;
         buttons.settings.showMicOptionsBtn = true;
         buttons.settings.showTabRoomParticipants = true;
         buttons.settings.showTabRoomSecurity = true;
+        buttons.settings.showTabEmailInvitation = true;
         buttons.settings.showLockRoomBtn = !isRoomLocked;
         buttons.settings.showUnlockRoomBtn = isRoomLocked;
         buttons.remote.audioBtnClickAllowed = true;
@@ -1267,11 +1350,13 @@ function handleButtonsRule() {
     elemDisplay(roomEmojiPickerBtn, buttons.main.showRoomEmojiPickerBtn);
     elemDisplay(myHandBtn, buttons.main.showMyHandBtn);
     elemDisplay(whiteboardBtn, buttons.main.showWhiteboardBtn);
+    elemDisplay(snapshotRoomBtn, buttons.main.showSnapshotRoomBtn && !isMobileDevice);
     elemDisplay(fileShareBtn, buttons.main.showFileShareBtn);
     elemDisplay(documentPiPBtn, buttons.main.showDocumentPipBtn);
     elemDisplay(mySettingsBtn, buttons.main.showMySettingsBtn);
     elemDisplay(aboutBtn, buttons.main.showAboutBtn);
     // chat
+    elemDisplay(msgerTogglePin, !isMobileDevice && buttons.chat.showTogglePinBtn);
     elemDisplay(msgerMaxBtn, !isMobileDevice && buttons.chat.showMaxBtn);
     elemDisplay(msgerSaveBtn, buttons.chat.showSaveMessageBtn);
     elemDisplay(msgerMarkdownBtn, buttons.chat.showMarkDownBtn);
@@ -1280,9 +1365,11 @@ function handleButtonsRule() {
     elemDisplay(msgerVideoUrlBtn, buttons.chat.showShareVideoAudioBtn);
     elemDisplay(msgerCPBtn, buttons.chat.showParticipantsBtn);
     // caption
+    elemDisplay(captionTogglePin, !isMobileDevice && buttons.caption.showTogglePinBtn);
     elemDisplay(captionMaxBtn, !isMobileDevice && buttons.caption.showMaxBtn);
     // Settings
     elemDisplay(dropDownMicOptions, buttons.settings.showMicOptionsBtn && isPresenter); // auto-detected
+    elemDisplay(captionEveryoneBtn, buttons.settings.showCaptionEveryoneBtn);
     elemDisplay(muteEveryoneBtn, buttons.settings.showMuteEveryoneBtn);
     elemDisplay(hideEveryoneBtn, buttons.settings.showHideEveryoneBtn);
     elemDisplay(ejectEveryoneBtn, buttons.settings.showEjectEveryoneBtn);
@@ -1291,10 +1378,36 @@ function handleButtonsRule() {
     elemDisplay(tabRoomPeerName, buttons.settings.showTabRoomPeerName);
     elemDisplay(tabRoomParticipants, buttons.settings.showTabRoomParticipants);
     elemDisplay(tabRoomSecurity, buttons.settings.showTabRoomSecurity);
+    elemDisplay(tabEmailInvitation, buttons.settings.showTabEmailInvitation);
     // Whiteboard
     buttons.whiteboard.whiteboardLockBtn
-        ? elemDisplay(whiteboardLockBtn, true)
-        : elemDisplay(whiteboardLockBtn, false, 'flex');
+        ? elemDisplay(whiteboardLockBtn, true, 'flex')
+        : elemDisplay(whiteboardLockBtn, false);
+}
+
+/**
+ * Get Buttons config from server side and apply to current client
+ */
+async function getButtons() {
+    try {
+        const response = await axios.get('/buttons', {
+            timeout: 5000,
+        });
+        const serverButtons = response.data.message;
+        if (serverButtons) {
+            // Merge serverButtons into BUTTONS, keeping the existing keys in BUTTONS if they are not present in serverButtons
+            buttons = {
+                ...buttons, // Spread current BUTTONS first to keep existing keys
+                ...serverButtons, // Overwrite or add new keys from serverButtons
+            };
+            console.log('AXIOS ROOM BUTTONS SETTINGS', {
+                serverButtons: serverButtons,
+                clientButtons: buttons,
+            });
+        }
+    } catch (error) {
+        console.error('AXIOS GET CONFIG ERROR', error.message);
+    }
 }
 
 /**
@@ -1303,16 +1416,17 @@ function handleButtonsRule() {
 async function whoAreYou() {
     console.log('11. Who are you?');
 
-    elemDisplay(loadingDiv, false);
     document.body.style.background = 'var(--body-bg)';
 
     if (myPeerName) {
+        elemDisplay(loadingDiv, false);
+
         myPeerName = filterXSS(myPeerName);
 
         console.log(`11.1 Check if ${myPeerName} exist in the room`, roomId);
 
         if (await checkUserName()) {
-            return userNameAlreadyInRoom();
+            if (!myToken) return userNameAlreadyInRoom(); // #209 Hack...
         }
 
         checkPeerAudioVideo();
@@ -1323,12 +1437,29 @@ async function whoAreYou() {
 
     playSound('newMessage');
 
+    // init buttons click events
+
+    initVideoBtn.onclick = async (e) => {
+        await handleVideo(e, true);
+    };
+    initAudioBtn.onclick = (e) => {
+        handleAudio(e, true);
+    };
+    initVideoMirrorBtn.onclick = (e) => {
+        toggleInitVideoMirror();
+    };
+    initUsernameEmojiButton.onclick = (e) => {
+        getId('usernameInput').value = '';
+        toggleUsernameEmoji();
+    };
+
     await loadLocalStorage();
 
     if (!useVideo || !buttons.main.showVideoBtn) {
         useVideo = false;
         elemDisplay(document.getElementById('initVideo'), false);
         elemDisplay(document.getElementById('initVideoBtn'), false);
+        elemDisplay(document.getElementById('initVideoMirrorBtn'), false);
         elemDisplay(document.getElementById('initVideoSelect'), false);
         elemDisplay(document.getElementById('tabVideoBtn'), false);
     }
@@ -1351,19 +1482,22 @@ async function whoAreYou() {
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swBg,
-        title: 'MiroTalk P2P',
+        title: brand.app.name,
         position: 'center',
         input: 'text',
-        inputPlaceholder: 'Enter your name',
-        inputAttributes: { maxlength: 32 },
+        inputPlaceholder: 'Enter your email or name',
+        inputAttributes: { maxlength: 32, id: 'usernameInput' },
         inputValue: window.localStorage.peer_name ? window.localStorage.peer_name : '',
         html: initUser, // inject html
         confirmButtonText: `Join meeting`,
         customClass: { popup: 'init-modal-size' },
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+        willOpen: () => {
+            elemDisplay(loadingDiv, false);
+        },
         inputValidator: async (value) => {
-            if (!value) return 'Please enter your name';
+            if (!value) return 'Please enter your email or name';
             // Long name
             if (value.length > 30) return 'Name must be max 30 char';
 
@@ -1380,6 +1514,10 @@ async function whoAreYou() {
             if (await checkUserName()) {
                 return 'Username is already in use!';
             } else {
+                // Hide username emoji
+                if (!usernameEmoji.classList.contains('hidden')) {
+                    usernameEmoji.classList.add('hidden');
+                }
                 window.localStorage.peer_name = myPeerName;
                 whoAreYouJoin();
             }
@@ -1391,20 +1529,20 @@ async function whoAreYou() {
     // select video - audio
 
     initVideoSelect.onchange = async () => {
-        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
+        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
+        refreshLsDevices();
     };
     initMicrophoneSelect.onchange = async () => {
+        await changeLocalMicrophone(initMicrophoneSelect.value);
         audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
-        await changeLocalMicrophone(audioInputSelect.value);
+        refreshLsDevices();
     };
-    initSpeakerSelect.onchange = () => {
+    initSpeakerSelect.onchange = async () => {
+        await changeAudioDestination();
         audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
-        changeAudioDestination();
+        refreshLsDevices();
     };
 
     // init video -audio buttons
@@ -1419,6 +1557,15 @@ async function whoAreYou() {
 
     setTippy(initAudioBtn, 'Stop the audio', 'top');
     setTippy(initVideoBtn, 'Stop the video', 'top');
+}
+
+/**
+ * Refresh all LS devices
+ */
+async function refreshLsDevices() {
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
+    lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
 }
 
 /**
@@ -1471,36 +1618,50 @@ async function loadLocalStorage() {
     console.log('12. Get Local Storage Devices before', localStorageDevices);
     if (localStorageDevices) {
         //
-        initMicrophoneSelect.selectedIndex = localStorageDevices.audio.index;
-        initSpeakerSelect.selectedIndex = localStorageDevices.speaker.index;
-        initVideoSelect.selectedIndex = localStorageDevices.video.index;
+        const initMicrophoneExist = selectOptionByValueExist(initMicrophoneSelect, localStorageDevices.audio.select);
+        const initSpeakerExist = selectOptionByValueExist(initSpeakerSelect, localStorageDevices.speaker.select);
+        const initVideoExist = selectOptionByValueExist(initVideoSelect, localStorageDevices.video.select);
         //
-        audioInputSelect.selectedIndex = initMicrophoneSelect.selectedIndex;
-        audioOutputSelect.selectedIndex = initSpeakerSelect.selectedIndex;
-        videoSelect.selectedIndex = initVideoSelect.selectedIndex;
-        //
-        if (lS.DEVICES_COUNT.audio != localStorageDevices.audio.count) {
+        const audioInputExist = selectOptionByValueExist(audioInputSelect, localStorageDevices.audio.select);
+        const audioOutputExist = selectOptionByValueExist(audioOutputSelect, localStorageDevices.speaker.select);
+        const videoExist = selectOptionByValueExist(videoSelect, localStorageDevices.video.select);
+
+        console.log('Check for audio changes', {
+            previous: localStorageDevices.audio.select,
+            current: audioInputSelect.value,
+        });
+
+        if (!initMicrophoneExist || !audioInputExist) {
             console.log('12.1 Audio devices seems changed, use default index 0');
             initMicrophoneSelect.selectedIndex = 0;
             audioInputSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(
-                lS.MEDIA_TYPE.audio,
-                initMicrophoneSelect.selectedIndex,
-                initMicrophoneSelect.value,
-            );
+            refreshLsDevices();
         }
-        if (lS.DEVICES_COUNT.speaker != localStorageDevices.speaker.count) {
+
+        console.log('Check for speaker changes', {
+            previous: localStorageDevices.speaker.select,
+            current: audioOutputSelect.value,
+        });
+
+        if (!initSpeakerExist || !audioOutputExist) {
             console.log('12.2 Speaker devices seems changed, use default index 0');
             initSpeakerSelect.selectedIndex = 0;
             audioOutputSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, initSpeakerSelect.selectedIndex, initSpeakerSelect.value);
+            refreshLsDevices();
         }
-        if (lS.DEVICES_COUNT.video != localStorageDevices.video.count) {
+
+        console.log('Check for video changes', {
+            previous: localStorageDevices.video.select,
+            current: videoSelect.value,
+        });
+
+        if (!initVideoExist || !videoExist) {
             console.log('12.3 Video devices seems changed, use default index 0');
             initVideoSelect.selectedIndex = 0;
             videoSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, initVideoSelect.selectedIndex, initVideoSelect.value);
+            refreshLsDevices();
         }
+
         //
         console.log('12.4 Get Local Storage Devices after', lS.getLocalStorageDevices());
     }
@@ -1508,8 +1669,35 @@ async function loadLocalStorage() {
     if (useVideo && initVideoSelect.value) {
         await changeInitCamera(initVideoSelect.value);
         await handleLocalCameraMirror();
-        await checkInitConfig();
     }
+    // Refresh audio
+    if (useAudio && audioInputSelect.value) {
+        await changeLocalMicrophone(audioInputSelect.value);
+    }
+    // Refresh speaker
+    if (audioOutputSelect.value) await changeAudioDestination();
+
+    // Check init audio/video
+    await checkInitConfig();
+}
+
+/**
+ * Use the select element to check if a specific option value exists,
+ * and if it does, automatically set it as the selected option.
+ * @param {object} selectElement
+ * @param {string} value
+ * @return boolean
+ */
+function selectOptionByValueExist(selectElement, value) {
+    let foundValue = false;
+    for (let i = 0; i < selectElement.options.length; i++) {
+        if (selectElement.options[i].value === value) {
+            selectElement.selectedIndex = i;
+            foundValue = true;
+            break;
+        }
+    }
+    return foundValue;
 }
 
 /**
@@ -1529,17 +1717,47 @@ async function checkInitConfig() {
  * @param {string} deviceId
  */
 async function changeInitCamera(deviceId) {
+    // Stop media tracks to avoid issue on mobile
     if (initStream) {
-        stopTracks(initStream);
+        await stopTracks(initStream);
+    }
+    if (localVideoMediaStream) {
+        await stopVideoTracks(localVideoMediaStream);
     }
 
     // Get video constraints
     const videoConstraints = await getVideoConstraints('default');
     videoConstraints['deviceId'] = { exact: deviceId };
 
-    navigator.mediaDevices
+    await navigator.mediaDevices
         .getUserMedia({ video: videoConstraints })
         .then((camStream) => {
+            updateInitLocalVideoMediaStream(camStream);
+        })
+        .catch(async (err) => {
+            console.error('Error accessing init video device', err);
+            console.warn('Fallback to default constraints');
+            try {
+                const camStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: {
+                            exact: deviceId, // Specify the exact device ID you want to access
+                        },
+                    },
+                }); // Fallback to default constraints
+                updateInitLocalVideoMediaStream(camStream);
+            } catch (fallbackErr) {
+                console.error('Error accessing init video device with default constraints', fallbackErr);
+                reloadBrowser(err);
+            }
+        });
+
+    /**
+     * Update Init/Local Video Stream
+     * @param {MediaStream} camStream
+     */
+    function updateInitLocalVideoMediaStream(camStream) {
+        if (camStream) {
             // We going to update init video stream
             initVideo.srcObject = camStream;
             initStream = camStream;
@@ -1548,17 +1766,24 @@ async function changeInitCamera(deviceId) {
             myVideo.srcObject = camStream;
             localVideoMediaStream = camStream;
             console.log('Success attached local video stream', localVideoMediaStream.getVideoTracks()[0].getSettings());
-        })
-        .catch((err) => {
-            console.error('[Error] changeInitCamera', err);
-            userLog('error', 'Error while swapping init camera' + err);
-            initVideoSelect.selectedIndex = 0;
-            lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, initVideoSelect.selectedIndex, initVideoSelect.value);
-            // Refresh page...
-            setTimeout(function () {
-                location.reload();
-            }, 3000);
-        });
+        }
+    }
+
+    /**
+     * Something going wrong
+     * @param {object} err
+     */
+    function reloadBrowser(err) {
+        console.error('[Error] changeInitCamera', err);
+        userLog('error', 'Error while swapping init camera' + err);
+        initVideoSelect.selectedIndex = 0;
+        videoSelect.selectedIndex = 0;
+        refreshLsDevices();
+        // Refresh page...
+        setTimeout(function () {
+            location.reload();
+        }, 3000);
+    }
 }
 
 /**
@@ -1575,19 +1800,51 @@ async function changeLocalCamera(deviceId) {
     videoConstraints['deviceId'] = { exact: deviceId };
     console.log('videoConstraints', videoConstraints);
 
-    navigator.mediaDevices
+    await navigator.mediaDevices
         .getUserMedia({ video: videoConstraints })
         .then((camStream) => {
+            updateLocalVideoMediaStream(camStream);
+        })
+        .catch(async (err) => {
+            console.error('Error accessing local video device:', err);
+            console.warn('Fallback to default constraints');
+            try {
+                const camStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: {
+                            exact: deviceId, // Specify the exact device ID you want to access
+                        },
+                    },
+                });
+                updateLocalVideoMediaStream(camStream);
+            } catch (fallbackErr) {
+                console.error('Error accessing init video device with default constraints', fallbackErr);
+                printError(err);
+            }
+        });
+
+    /**
+     * Update Local Video Media Stream
+     * @param {MediaStream} camStream
+     */
+    function updateLocalVideoMediaStream(camStream) {
+        if (camStream) {
             myVideo.srcObject = camStream;
             localVideoMediaStream = camStream;
             logStreamSettingsInfo('Success attached local video stream', camStream);
             refreshMyStreamToPeers(camStream);
             setLocalMaxFps(videoMaxFrameRate);
-        })
-        .catch((err) => {
-            console.error('[Error] changeLocalCamera', err);
-            userLog('error', 'Error while swapping local camera' + err);
-        });
+        }
+    }
+
+    /**
+     * SOmething going wrong
+     * @param {object} err
+     */
+    function printError(err) {
+        console.error('[Error] changeLocalCamera', err);
+        userLog('error', 'Error while swapping local camera ' + err);
+    }
 }
 
 /**
@@ -1604,7 +1861,7 @@ async function changeLocalMicrophone(deviceId) {
     audioConstraints['deviceId'] = { exact: deviceId };
     console.log('audioConstraints', audioConstraints);
 
-    navigator.mediaDevices
+    await navigator.mediaDevices
         .getUserMedia({ audio: audioConstraints })
         .then((micStream) => {
             myAudio.srcObject = micStream;
@@ -1667,8 +1924,7 @@ async function joinToChannel() {
         peer_info: peerInfo,
         peer_uuid: myPeerUUID,
         peer_name: myPeerName,
-        peer_username: myUsername,
-        peer_password: myPassword,
+        peer_token: myToken,
         peer_video: useVideo,
         peer_audio: useAudio,
         peer_video_status: myVideoStatus,
@@ -1679,7 +1935,7 @@ async function joinToChannel() {
         peer_privacy_status: isVideoPrivacyActive,
         userAgent: userAgent,
     });
-    handleBodyOnMouseMove(); // show/hide buttonsBar...
+    handleBodyOnMouseMove(); // show/hide buttonsBar, bottomButtons ...
 }
 
 /**
@@ -1767,19 +2023,65 @@ async function handlePeersConnectionStatus(peer_id) {
 }
 
 /**
+ * Handle ICE candidate
  * https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/onicecandidate
+ * https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/icecandidateerror_event
  * @param {string} peer_id socket.id
  */
 async function handleOnIceCandidate(peer_id) {
     peerConnections[peer_id].onicecandidate = (event) => {
-        if (!event.candidate) return;
+        if (!event.candidate || !event.candidate.candidate) return;
+
+        const { type, candidate, address, sdpMLineIndex } = event.candidate;
+
+        //console.log('[ICE-CANDIDATE] ---->', { type, address, candidate });
+
         sendToServer('relayICE', {
-            peer_id: peer_id,
+            peer_id,
             ice_candidate: {
-                sdpMLineIndex: event.candidate.sdpMLineIndex,
-                candidate: event.candidate.candidate,
+                sdpMLineIndex,
+                candidate,
             },
         });
+
+        // Get Ice address
+        const ipRegex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
+        let addressInfo = candidate.match(ipRegex);
+        if (!addressInfo && address) addressInfo = [address];
+
+        // IP
+        if (addressInfo) {
+            networkIP.innerText = addressInfo;
+        }
+
+        // Display network information based on candidate type
+        switch (type) {
+            case 'host':
+                networkHost.innerText = '🟢';
+                break;
+            case 'srflx':
+                networkStun.innerText = '🟢';
+                break;
+            case 'relay':
+                networkTurn.innerText = '🟢';
+                break;
+            default:
+                console.warn(`[ICE candidate] unknown type: ${type}`, candidate);
+                break;
+        }
+    };
+
+    // handle ICE candidate errors
+    peerConnections[peer_id].onicecandidateerror = (event) => {
+        const { url, errorText } = event;
+
+        console.warn('[ICE candidate] error', { url, error: errorText });
+
+        if (url.startsWith('host:')) networkHost.innerText = '🔴';
+        if (url.startsWith('stun:')) networkStun.innerText = '🔴';
+        if (url.startsWith('turn:')) networkTurn.innerText = '🔴';
+
+        //msgPopup('warning', `${url}: ${errorText}`, 'top-end', 6000);
     };
 }
 
@@ -1883,6 +2185,8 @@ async function handleRTCDataChannels(peer_id) {
                             case 'micVolume':
                                 handlePeerVolume(dataMessage);
                                 break;
+                            default:
+                                break;
                         }
                     } catch (err) {
                         console.error('mirotalk_chat_channel', err);
@@ -1908,6 +2212,8 @@ async function handleRTCDataChannels(peer_id) {
                     } catch (err) {
                         console.error('mirotalk_file_sharing_channel', err);
                     }
+                    break;
+                default:
                     break;
             }
         };
@@ -2054,6 +2360,17 @@ function handleDisconnect(reason) {
     for (const peer_id in peerConnections) {
         const peerVideoId = peer_id + '___video';
         const peerAudioId = peer_id + '___audio';
+
+        const peerVideo = getId(peerVideoId);
+        if (peerVideo) {
+            // Peer video in focus mode
+            if (peerVideo.hasAttribute('focus-mode')) {
+                const remoteVideoFocusBtn = getId(peer_id + '_focusMode');
+                if (remoteVideoFocusBtn) {
+                    remoteVideoFocusBtn.click();
+                }
+            }
+        }
         peerVideoMediaElements[peerVideoId].parentNode.removeChild(peerVideoMediaElements[peerVideoId]);
         peerAudioMediaElements[peerAudioId].parentNode.removeChild(peerAudioMediaElements[peerAudioId]);
         peerConnections[peer_id].close();
@@ -2088,6 +2405,16 @@ function handleRemovePeer(config) {
     const peerAudioId = peer_id + '___audio';
 
     if (peerVideoId in peerVideoMediaElements) {
+        const peerVideo = getId(peerVideoId);
+        if (peerVideo) {
+            // Peer video in focus mode
+            if (peerVideo.hasAttribute('focus-mode')) {
+                const remoteVideoFocusBtn = getId(peer_id + '_focusMode');
+                if (remoteVideoFocusBtn) {
+                    remoteVideoFocusBtn.click();
+                }
+            }
+        }
         peerVideoMediaElements[peerVideoId].parentNode.removeChild(peerVideoMediaElements[peerVideoId]);
         adaptAspectRatio();
     }
@@ -2114,10 +2441,35 @@ function handleRemovePeer(config) {
 }
 
 /**
+ * Set custom theme
+ */
+function setCustomTheme() {
+    const color = themeCustom.color;
+    swBg = `radial-gradient(${color}, ${color})`;
+    setSP('--body-bg', `radial-gradient(${color}, ${color})`);
+    setSP('--msger-bg', `radial-gradient(${color}, ${color})`);
+    setSP('--msger-private-bg', `radial-gradient(${color}, ${color})`);
+    setSP('--wb-bg', `radial-gradient(${color}, ${color})`);
+    setSP('--elem-border-color', '0.5px solid rgb(255 255 255 / 32%)');
+    setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
+    setSP('--select-bg', `${color}`);
+    setSP('--tab-btn-active', `${color}`);
+    setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
+    setSP('--left-msg-bg', '#252d31');
+    setSP('--right-msg-bg', `${color}`);
+    setSP('--private-msg-bg', '#6b1226');
+    setSP('--btn-bar-bg-color', '#FFFFFF');
+    setSP('--btn-bar-color', '#000000');
+    setSP('--btns-bg-color', `${color}`);
+    document.body.style.background = `radial-gradient(${color}, ${color})`;
+}
+
+/**
  * Set mirotalk theme | dark | grey | ...
- * @param {string} theme type
  */
 function setTheme() {
+    if (themeCustom.keep) return setCustomTheme();
+
     mirotalkTheme.selectedIndex = lsSettings.theme;
     const theme = mirotalkTheme.value;
     switch (theme) {
@@ -2128,97 +2480,178 @@ function setTheme() {
             setSP('--msger-bg', 'radial-gradient(#393939, #000000)');
             setSP('--msger-private-bg', 'radial-gradient(#393939, #000000)');
             setSP('--wb-bg', 'radial-gradient(#393939, #000000)');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#2c2c2c');
-            setSP('--tab-btn-active', 'rgb(30 29 29)');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--left-msg-bg', '#252d31');
-            setSP('--right-msg-bg', '#056162');
-            setSP('--private-msg-bg', '#6b1226');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(28, 28, 28, 0.8)');
+            setSP('--select-bg', '#3a3a3a');
+            setSP('--tab-btn-active', '#4f4f4f');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--left-msg-bg', '#353535');
+            setSP('--right-msg-bg', '#4a4a4a');
+            setSP('--private-msg-bg', '#2a2a2a');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
+            setSP('--btns-bg-color', 'rgba(0, 0, 0, 0.7)');
+            setSP('--dd-color', '#FFFFFF');
             document.body.style.background = 'radial-gradient(#393939, #000000)';
             mirotalkTheme.selectedIndex = 0;
             break;
         case 'grey':
             // grey theme
-            swBg = 'radial-gradient(#666, #333)';
-            setSP('--body-bg', 'radial-gradient(#666, #333)');
-            setSP('--msger-bg', 'radial-gradient(#666, #333)');
-            setSP('--wb-bg', 'radial-gradient(#797979, #000)');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#2c2c2c');
-            setSP('--tab-btn-active', 'rgb(30 29 29)');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--msger-private-bg', 'radial-gradient(#666, #333)');
-            setSP('--left-msg-bg', '#252d31');
-            setSP('--right-msg-bg', '#056162');
-            setSP('--private-msg-bg', '#6b1226');
+            swBg = 'radial-gradient(#4f4f4f, #1c1c1c)';
+            setSP('--body-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--msger-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--wb-bg', 'radial-gradient(#5f5f5f, #2c2c2c)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(28, 28, 28, 0.8)');
+            setSP('--select-bg', '#3a3a3a');
+            setSP('--tab-btn-active', '#4f4f4f');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#353535');
+            setSP('--right-msg-bg', '#4a4a4a');
+            setSP('--private-msg-bg', '#616161');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
-            document.body.style.background = 'radial-gradient(#666, #333)';
+            setSP('--btns-bg-color', 'rgba(0, 0, 0, 0.7)');
+            setSP('--dd-color', '#FFFFFF');
+            document.body.style.background = 'radial-gradient(#4f4f4f, #1c1c1c)';
             mirotalkTheme.selectedIndex = 1;
             break;
         case 'green':
             // green theme
-            swBg = 'radial-gradient(#003934, #001E1A)';
-            setSP('--body-bg', 'radial-gradient(#003934, #001E1A)');
-            setSP('--msger-bg', 'radial-gradient(#003934, #001E1A)');
-            setSP('--wb-bg', 'radial-gradient(#003934, #001E1A)');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#001E1A');
-            setSP('--tab-btn-active', '#003934');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--msger-private-bg', 'radial-gradient(#666, #333)');
-            setSP('--left-msg-bg', '#003934');
-            setSP('--right-msg-bg', '#001E1A');
-            setSP('--private-msg-bg', '#6b1226');
+            swBg = 'radial-gradient(#004d40, #001f1c)';
+            setSP('--body-bg', 'radial-gradient(#004d40, #001f1c)');
+            setSP('--msger-bg', 'radial-gradient(#004d40, #001f1c)');
+            setSP('--wb-bg', 'radial-gradient(#004d40, #001f1c)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(0, 31, 28, 0.8)');
+            setSP('--select-bg', '#002e2b');
+            setSP('--tab-btn-active', '#004d40');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#004d40');
+            setSP('--right-msg-bg', '#00312c');
+            setSP('--private-msg-bg', '#004a47');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
-            document.body.style.background = 'radial-gradient(#003934, #001E1A)';
+            setSP('--btns-bg-color', 'rgba(0, 42, 34, 0.7)');
+            setSP('--dd-color', '#00FF00');
+            document.body.style.background = 'radial-gradient(#004d40, #001f1c)';
             mirotalkTheme.selectedIndex = 2;
             break;
         case 'blue':
             // blue theme
-            swBg = 'radial-gradient(#306bac, #141B41)';
-            setSP('--body-bg', 'radial-gradient(#306bac, #141B41)');
-            setSP('--msger-bg', 'radial-gradient(#306bac, #141B41)');
-            setSP('--wb-bg', 'radial-gradient(#306bac, #141B41)');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#141B41');
-            setSP('--tab-btn-active', '#306bac');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--msger-private-bg', 'radial-gradient(#666, #333)');
-            setSP('--left-msg-bg', '#306bac');
-            setSP('--right-msg-bg', '#141B41');
-            setSP('--private-msg-bg', '#6b1226');
+            swBg = 'radial-gradient(#1a237e, #0d1b34)';
+            setSP('--body-bg', 'radial-gradient(#1a237e, #0d1b34)');
+            setSP('--msger-bg', 'radial-gradient(#1a237e, #0d1b34)');
+            setSP('--wb-bg', 'radial-gradient(#1a237e, #0d1b34)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(13, 27, 52, 0.8)');
+            setSP('--select-bg', '#0d1b34');
+            setSP('--tab-btn-active', '#1a237e');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#1a237e');
+            setSP('--right-msg-bg', '#0d1b34');
+            setSP('--private-msg-bg', '#1a237e');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
-            document.body.style.background = 'radial-gradient(#306bac, #141B41)';
+            setSP('--btns-bg-color', 'rgba(0, 39, 77, 0.7)');
+            setSP('--dd-color', '#1E90FF');
+            document.body.style.background = 'radial-gradient(#1a237e, #0d1b34)';
             mirotalkTheme.selectedIndex = 3;
             break;
         case 'red':
             // red theme
-            swBg = 'radial-gradient(#69140E, #3C1518)';
-            setSP('--body-bg', 'radial-gradient(#69140E, #3C1518)');
-            setSP('--msger-bg', 'radial-gradient(#69140E, #3C1518)');
-            setSP('--wb-bg', 'radial-gradient(#69140E, #3C1518)');
-            setSP('--navbar-bg', 'rgba(0, 0, 0, 0.2)');
-            setSP('--select-bg', '#3C1518');
-            setSP('--tab-btn-active', '#69140E');
-            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.2)');
-            setSP('--msger-private-bg', 'radial-gradient(#666, #333)');
-            setSP('--left-msg-bg', '#69140E');
-            setSP('--right-msg-bg', '#3C1518');
-            setSP('--private-msg-bg', '#6b1226');
+            swBg = 'radial-gradient(#8B0000, #320000)';
+            setSP('--body-bg', 'radial-gradient(#8B0000, #320000)');
+            setSP('--msger-bg', 'radial-gradient(#8B0000, #320000)');
+            setSP('--wb-bg', 'radial-gradient(#8B0000, #320000)');
+            setSP('--navbar-bg', 'rgba(50, 0, 0, 0.8)');
+            setSP('--select-bg', '#320000');
+            setSP('--tab-btn-active', '#8B0000');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#8B0000');
+            setSP('--right-msg-bg', '#4B0000');
+            setSP('--private-msg-bg', '#8B0000');
             setSP('--btn-bar-bg-color', '#FFFFFF');
             setSP('--btn-bar-color', '#000000');
-            document.body.style.background = 'radial-gradient(#69140E, #3C1518)';
+            setSP('--btns-bg-color', 'rgba(42, 13, 13, 0.7)');
+            setSP('--dd-color', '#FF4500');
+            document.body.style.background = 'radial-gradient(#8B0000, #320000)';
             mirotalkTheme.selectedIndex = 4;
+            break;
+        case 'purple':
+            // purple theme
+            swBg = 'radial-gradient(#4B0082, #2C003E)';
+            setSP('--body-bg', 'radial-gradient(#4B0082, #2C003E)');
+            setSP('--msger-bg', 'radial-gradient(#4B0082, #2C003E)');
+            setSP('--wb-bg', 'radial-gradient(#4B0082, #2C003E)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(44, 0, 62, 0.8)');
+            setSP('--select-bg', '#2C003E');
+            setSP('--tab-btn-active', '#4B0082');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#4B0082');
+            setSP('--right-msg-bg', '#2C003E');
+            setSP('--private-msg-bg', '#4B0082');
+            setSP('--btn-bar-bg-color', '#FFFFFF');
+            setSP('--btn-bar-color', '#000000');
+            setSP('--btns-bg-color', 'rgba(42, 0, 29, 0.7)');
+            setSP('--dd-color', '#BF00FF');
+            document.body.style.background = 'radial-gradient(#4B0082, #2C003E)';
+            mirotalkTheme.selectedIndex = 5;
+            break;
+        case 'orange':
+            // orange theme
+            swBg = 'radial-gradient(#FF8C00, #4B1C00)';
+            setSP('--body-bg', 'radial-gradient(#FF8C00, #4B1C00)');
+            setSP('--msger-bg', 'radial-gradient(#FF8C00, #4B1C00)');
+            setSP('--wb-bg', 'radial-gradient(#FF8C00, #4B1C00)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(75, 28, 0, 0.8)');
+            setSP('--select-bg', '#4B1C00');
+            setSP('--tab-btn-active', '#FF8C00');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#FF8C00');
+            setSP('--right-msg-bg', '#4B1C00');
+            setSP('--private-msg-bg', '#FF8C00');
+            setSP('--btn-bar-bg-color', '#FFFFFF');
+            setSP('--btn-bar-color', '#000000');
+            setSP('--btns-bg-color', 'rgba(61, 26, 0, 0.7)');
+            setSP('--dd-color', '#FFA500');
+            document.body.style.background = 'radial-gradient(#FF8C00, #4B1C00)';
+            mirotalkTheme.selectedIndex = 6;
+            break;
+        case 'yellow':
+            // yellow theme
+            swBg = 'radial-gradient(#FFD700, #3B3B00)';
+            setSP('--body-bg', 'radial-gradient(#FFD700, #3B3B00)');
+            setSP('--msger-bg', 'radial-gradient(#FFD700, #3B3B00)');
+            setSP('--wb-bg', 'radial-gradient(#FFD700, #3B3B00)');
+            setSP('--elem-border-color', 'none');
+            setSP('--navbar-bg', 'rgba(59, 59, 0, 0.8)');
+            setSP('--select-bg', '#3B3B00');
+            setSP('--tab-btn-active', '#FFD700');
+            setSP('--box-shadow', '0px 8px 16px 0px rgba(0, 0, 0, 0.4)');
+            setSP('--msger-private-bg', 'radial-gradient(#4f4f4f, #1c1c1c)');
+            setSP('--left-msg-bg', '#FFD700');
+            setSP('--right-msg-bg', '#B8860B');
+            setSP('--private-msg-bg', '#FFD700');
+            setSP('--btn-bar-bg-color', '#FFFFFF');
+            setSP('--btn-bar-color', '#000000');
+            setSP('--btns-bg-color', 'rgba(77, 59, 0, 0.7)');
+            setSP('--dd-color', '#FFD700');
+            document.body.style.background = 'radial-gradient(#FFD700, #3B3B00)';
+            mirotalkTheme.selectedIndex = 7;
             break;
         // ...
         default:
-            return console.log('No theme found');
+            console.log('No theme found');
+            break;
     }
     //setButtonsBarPosition(mainButtonsBarPosition);
 }
@@ -2233,20 +2666,38 @@ function setButtonsBarPosition(position) {
     mainButtonsBarPosition = position;
     switch (mainButtonsBarPosition) {
         case 'vertical':
+            // buttonsBar
             setSP('--btns-top', '50%');
             setSP('--btns-right', '0px');
             setSP('--btns-left', '15px');
             setSP('--btns-margin-left', '0px');
             setSP('--btns-width', '40px');
             setSP('--btns-flex-direction', 'column');
+            // bottomButtons horizontally
+            setSP('--bottom-btns-top', 'auto');
+            setSP('--bottom-btns-left', '50%');
+            setSP('--bottom-btns-bottom', '0');
+            setSP('--bottom-btns-translate-X', '-50%');
+            setSP('--bottom-btns-translate-Y', '0%');
+            setSP('--bottom-btns-margin-bottom', '16px');
+            setSP('--bottom-btns-flex-direction', 'row');
             break;
         case 'horizontal':
+            // buttonsBar
             setSP('--btns-top', '95%');
             setSP('--btns-right', '25%');
             setSP('--btns-left', '50%');
-            setSP('--btns-margin-left', '-330px');
-            setSP('--btns-width', '660px');
+            setSP('--btns-margin-left', '-260px');
+            setSP('--btns-width', '520px');
             setSP('--btns-flex-direction', 'row');
+            // bottomButtons vertically
+            setSP('--bottom-btns-top', '50%');
+            setSP('--bottom-btns-left', '15px');
+            setSP('--bottom-btns-bottom', 'auto');
+            setSP('--bottom-btns-translate-X', '0%');
+            setSP('--bottom-btns-translate-Y', '-50%');
+            setSP('--bottom-btns-margin-bottom', '0');
+            setSP('--bottom-btns-flex-direction', 'column');
             break;
         default:
             console.log('No position found');
@@ -2259,7 +2710,7 @@ function setButtonsBarPosition(position) {
  * Init to enumerate the devices
  */
 async function initEnumerateDevices() {
-    console.log('05. init Enumerate Devices');
+    console.log('05. init Enumerate Video and Audio Devices');
     await initEnumerateVideoDevices();
     await initEnumerateAudioDevices();
 }
@@ -2273,8 +2724,8 @@ async function initEnumerateAudioDevices() {
     // allow the audio
     await navigator.mediaDevices
         .getUserMedia({ audio: true })
-        .then((stream) => {
-            enumerateAudioDevices(stream);
+        .then(async (stream) => {
+            await enumerateAudioDevices(stream);
             useAudio = true;
         })
         .catch(() => {
@@ -2291,8 +2742,8 @@ async function initEnumerateVideoDevices() {
     // allow the video
     await navigator.mediaDevices
         .getUserMedia({ video: true })
-        .then((stream) => {
-            enumerateVideoDevices(stream);
+        .then(async (stream) => {
+            await enumerateVideoDevices(stream);
             useVideo = true;
         })
         .catch(() => {
@@ -2304,12 +2755,12 @@ async function initEnumerateVideoDevices() {
  * Enumerate Audio
  * @param {object} stream
  */
-function enumerateAudioDevices(stream) {
+async function enumerateAudioDevices(stream) {
     console.log('06. Get Audio Devices');
-    navigator.mediaDevices
+    await navigator.mediaDevices
         .enumerateDevices()
         .then((devices) =>
-            devices.forEach((device) => {
+            devices.forEach(async (device) => {
                 let el,
                     eli = null;
                 if ('audioinput' === device.kind) {
@@ -2322,13 +2773,13 @@ function enumerateAudioDevices(stream) {
                     lS.DEVICES_COUNT.speaker++;
                 }
                 if (!el) return;
-                addChild(device, [el, eli]);
+                await addChild(device, [el, eli]);
             }),
         )
-        .then(() => {
-            stopTracks(stream);
+        .then(async () => {
+            await stopTracks(stream);
             isEnumerateAudioDevices = true;
-            const sinkId = 'sinkId' in HTMLMediaElement.prototype;
+            //const sinkId = 'sinkId' in HTMLMediaElement.prototype;
             audioOutputSelect.disabled = !sinkId;
             // Check if there is speakers
             if (!sinkId || initSpeakerSelect.options.length === 0) {
@@ -2342,12 +2793,12 @@ function enumerateAudioDevices(stream) {
  * Enumerate Video
  * @param {object} stream
  */
-function enumerateVideoDevices(stream) {
+async function enumerateVideoDevices(stream) {
     console.log('07. Get Video Devices');
-    navigator.mediaDevices
+    await navigator.mediaDevices
         .enumerateDevices()
         .then((devices) =>
-            devices.forEach((device) => {
+            devices.forEach(async (device) => {
                 let el,
                     eli = null;
                 if ('videoinput' === device.kind) {
@@ -2356,11 +2807,11 @@ function enumerateVideoDevices(stream) {
                     lS.DEVICES_COUNT.video++;
                 }
                 if (!el) return;
-                addChild(device, [el, eli]);
+                await addChild(device, [el, eli]);
             }),
         )
-        .then(() => {
-            stopTracks(stream);
+        .then(async () => {
+            await stopTracks(stream);
             isEnumerateVideoDevices = true;
         });
 }
@@ -2380,7 +2831,7 @@ async function stopTracks(stream) {
  * @param {object} device
  * @param {object} els
  */
-function addChild(device, els) {
+async function addChild(device, els) {
     const { kind, deviceId, label } = device;
     els.forEach((el) => {
         const option = document.createElement('option');
@@ -2412,19 +2863,35 @@ async function setupLocalVideoMedia() {
         return;
     }
 
-    console.log('Requesting access to local video inputs');
+    console.log('Requesting access to video inputs');
 
     const videoConstraints = useVideo ? await getVideoConstraints('default') : false;
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+        await updateLocalVideoMediaStream(stream);
+    } catch (err) {
+        console.error('Error accessing video device', err);
+        console.warn('Fallback to default constraints');
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            await updateLocalVideoMediaStream(stream);
+        } catch (fallbackErr) {
+            console.error('Error accessing video device with default constraints', fallbackErr);
+            handleMediaError('video', fallbackErr);
+        }
+    }
+
+    /**
+     * Update Local Media Stream
+     * @param {MediaStream} stream
+     */
+    async function updateLocalVideoMediaStream(stream) {
         if (stream) {
             localVideoMediaStream = stream;
             await loadLocalMedia(stream, 'video');
-            console.log('10. Access granted to video device');
+            console.log('Access granted to video device');
         }
-    } catch (err) {
-        handleMediaError('video', err);
     }
 }
 
@@ -2438,7 +2905,7 @@ async function setupLocalAudioMedia() {
         return;
     }
 
-    console.log('Requesting access to local audio inputs');
+    console.log('Requesting access to audio inputs');
 
     const audioConstraints = useAudio ? await getAudioConstraints() : false;
 
@@ -2459,11 +2926,59 @@ async function setupLocalAudioMedia() {
 
 /**
  * Handle media access error.
+ * https://blog.addpipe.com/common-getusermedia-errors/
+ *
  * @param {string} mediaType - 'video' or 'audio'
- * @param {Error} err - The error object
+ * @param {object} err - The error object
  */
 function handleMediaError(mediaType, err) {
-    console.error(`[Error] - Access denied for ${mediaType} device`, err);
+    playSound('alert');
+    //
+    let errMessage = err;
+
+    switch (err.name) {
+        case 'NotFoundError':
+        case 'DevicesNotFoundError':
+            errMessage = 'Required track is missing';
+            break;
+        case 'NotReadableError':
+        case 'TrackStartError':
+            errMessage = 'Already in use';
+            break;
+        case 'OverconstrainedError':
+        case 'ConstraintNotSatisfiedError':
+            errMessage = 'Constraints cannot be satisfied by available devices';
+            break;
+        case 'NotAllowedError':
+        case 'PermissionDeniedError':
+            errMessage = 'Permission denied in browser';
+            break;
+        case 'TypeError':
+            errMessage = 'Empty constraints object';
+            break;
+        default:
+            break;
+    }
+
+    // Print message to inform user
+    const $html = `
+        <ul style="text-align: left">
+            <li>Media type: ${mediaType}</li>
+            <li>Error name: ${err.name}</li>
+            <li>Error message: <p style="color: red">${errMessage}</p></li>
+            <li>Common: <a href="https://blog.addpipe.com/common-getusermedia-errors" target="_blank">getUserMedia errors</a></li>
+        </ul>
+    `;
+
+    msgHTML(null, images.forbidden, 'Access denied', $html, 'center', '/');
+
+    /*
+        it immediately stops the execution of the current function and jumps to the nearest enclosing try...catch block or, 
+        if none exists, it interrupts the script execution and displays an error message in the console.
+    */
+    throw new Error(
+        `Access denied for ${mediaType} device [${err.name}]: ${errMessage} check the common getUserMedia errors: https://blog.addpipe.com/common-getusermedia-errors/`,
+    );
 }
 
 /**
@@ -2493,6 +3008,7 @@ async function loadLocalMedia(stream, kind) {
             const myAudioStatusIcon = document.createElement('button');
             const myVideoFullScreenBtn = document.createElement('button');
             const myVideoPinBtn = document.createElement('button');
+            const myVideoMirrorBtn = document.createElement('button');
             const myVideoZoomInBtn = document.createElement('button');
             const myVideoZoomOutBtn = document.createElement('button');
             const myVideoPiPBtn = document.createElement('button');
@@ -2503,6 +3019,7 @@ async function loadLocalMedia(stream, kind) {
             // session time
             mySessionTime.setAttribute('id', 'mySessionTime');
             mySessionTime.className = 'notranslate';
+            mySessionTime.style.cursor = 'default';
 
             // my peer name
             myPeerName.setAttribute('id', 'myVideoParagraph');
@@ -2520,10 +3037,12 @@ async function loadLocalMedia(stream, kind) {
             // my video status element
             myVideoStatusIcon.setAttribute('id', 'myVideoStatusIcon');
             myVideoStatusIcon.className = className.videoOn;
+            myVideoStatusIcon.style.cursor = 'default';
 
             // my audio status element
             myAudioStatusIcon.setAttribute('id', 'myAudioStatusIcon');
             myAudioStatusIcon.className = className.audioOn;
+            myAudioStatusIcon.style.cursor = 'default';
 
             // my video to image
             myVideoToImgBtn.setAttribute('id', 'myVideoToImgBtn');
@@ -2547,6 +3066,10 @@ async function loadLocalMedia(stream, kind) {
             myVideoPinBtn.setAttribute('id', 'myVideoPinBtn');
             myVideoPinBtn.className = className.pinUnpin;
 
+            // my video toggle mirror
+            myVideoMirrorBtn.setAttribute('id', 'myVideoMirror');
+            myVideoMirrorBtn.className = className.mirror;
+
             // no mobile devices
             if (!isMobileDevice) {
                 setTippy(mySessionTime, 'Session Time', 'bottom');
@@ -2557,10 +3080,11 @@ async function loadLocalMedia(stream, kind) {
                 setTippy(myAudioStatusIcon, 'My audio is on', 'bottom');
                 setTippy(myVideoToImgBtn, 'Take a snapshot', 'bottom');
                 setTippy(myVideoFullScreenBtn, 'Full screen mode', 'bottom');
-                setTippy(myVideoZoomInBtn, 'Zoom in video', 'bottom');
                 setTippy(myVideoPiPBtn, 'Toggle picture in picture', 'bottom');
+                setTippy(myVideoZoomInBtn, 'Zoom in video', 'bottom');
                 setTippy(myVideoZoomOutBtn, 'Zoom out video', 'bottom');
                 setTippy(myVideoPinBtn, 'Toggle Pin video', 'bottom');
+                setTippy(myVideoMirrorBtn, 'Toggle video mirror', 'bottom');
             }
 
             // my video avatar image
@@ -2581,6 +3105,8 @@ async function loadLocalMedia(stream, kind) {
             myVideoNavBar.appendChild(mySessionTime);
 
             !isMobileDevice && myVideoNavBar.appendChild(myVideoPinBtn);
+
+            myVideoNavBar.appendChild(myVideoMirrorBtn);
 
             buttons.local.showVideoPipBtn && myVideoNavBar.appendChild(myVideoPiPBtn);
 
@@ -2610,6 +3136,7 @@ async function loadLocalMedia(stream, kind) {
             myLocalMedia.muted = true;
             myLocalMedia.volume = 0;
             myLocalMedia.controls = false;
+            myLocalMedia.poster = images.poster;
 
             myVideoWrap.className = 'Camera';
             myVideoWrap.setAttribute('id', 'myVideoWrap');
@@ -2628,6 +3155,8 @@ async function loadLocalMedia(stream, kind) {
             attachMediaStream(myLocalMedia, stream);
             adaptAspectRatio();
 
+            handleVideoToggleMirror(myLocalMedia.id, myVideoMirrorBtn.id);
+
             isVideoFullScreenSupported && handleVideoPlayerFs(myLocalMedia.id, myVideoFullScreenBtn.id);
 
             handleFileDragAndDrop(myLocalMedia.id, myPeerId, true);
@@ -2638,7 +3167,7 @@ async function loadLocalMedia(stream, kind) {
 
             handleVideoPinUnpin(myLocalMedia.id, myVideoPinBtn.id, myVideoWrap.id, myLocalMedia.id);
 
-            buttons.local.showVideoPipBtn && handlePictureInPicture(myVideoPiPBtn.id, myLocalMedia.id);
+            buttons.local.showVideoPipBtn && handlePictureInPicture(myVideoPiPBtn.id, myLocalMedia.id, myPeerId);
 
             ZOOM_IN_OUT_ENABLED && handleVideoZoomInOut(myVideoZoomInBtn.id, myVideoZoomOutBtn.id, myLocalMedia.id);
 
@@ -2753,6 +3282,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             const remoteVideoToImgBtn = document.createElement('button');
             const remoteVideoFullScreenBtn = document.createElement('button');
             const remoteVideoPinBtn = document.createElement('button');
+            const remoteVideoFocusBtn = document.createElement('button');
+            const remoteVideoMirrorBtn = document.createElement('button');
             const remoteVideoZoomInBtn = document.createElement('button');
             const remoteVideoZoomOutBtn = document.createElement('button');
             const remoteVideoPiPBtn = document.createElement('button');
@@ -2760,6 +3291,11 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             const remotePitchMeter = document.createElement('div');
             const remotePitchBar = document.createElement('div');
             const remoteAudioVolume = document.createElement('input');
+
+            // Expand button UI/UX
+            const remoteExpandBtnDiv = document.createElement('div');
+            const remoteExpandBtn = document.createElement('button');
+            const remoteExpandContainerDiv = document.createElement('div');
 
             // remote peer name element
             remotePeerName.setAttribute('id', peer_id + '_name');
@@ -2776,10 +3312,12 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             // remote video status element
             remoteVideoStatusIcon.setAttribute('id', peer_id + '_videoStatus');
             remoteVideoStatusIcon.className = className.videoOn;
+            remoteVideoStatusIcon.style.cursor = 'default';
 
             // remote audio status element
             remoteAudioStatusIcon.setAttribute('id', peer_id + '_audioStatus');
             remoteAudioStatusIcon.className = className.audioOn;
+            remoteAudioStatusIcon.style.cursor = 'default';
 
             // remote audio volume element
             remoteAudioVolume.setAttribute('id', peer_id + '_audioVolume');
@@ -2826,6 +3364,14 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             remoteVideoPinBtn.setAttribute('id', peer_id + '_pinUnpin');
             remoteVideoPinBtn.className = className.pinUnpin;
 
+            // remote video hide all button
+            remoteVideoFocusBtn.setAttribute('id', peer_id + '_focusMode');
+            remoteVideoFocusBtn.className = className.hideAll;
+
+            // remote video toggle mirror
+            remoteVideoMirrorBtn.setAttribute('id', peer_id + '_toggleMirror');
+            remoteVideoMirrorBtn.className = className.mirror;
+
             // no mobile devices
             if (!isMobileDevice) {
                 setTippy(remotePeerName, 'Participant name', 'bottom');
@@ -2843,6 +3389,8 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
                 setTippy(remoteVideoZoomOutBtn, 'Zoom out video', 'bottom');
                 setTippy(remoteVideoPiPBtn, 'Toggle picture in picture', 'bottom');
                 setTippy(remoteVideoPinBtn, 'Toggle Pin video', 'bottom');
+                setTippy(remoteVideoFocusBtn, 'Toggle Focus mode', 'bottom');
+                setTippy(remoteVideoMirrorBtn, 'Toggle video mirror', 'bottom');
             }
 
             // my video avatar image
@@ -2861,15 +3409,33 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             // remote video nav bar
             remoteVideoNavBar.className = 'navbar fadein';
 
+            // remote expand buttons div
+            remoteExpandBtnDiv.className = 'expand-video';
+            remoteExpandBtn.id = peer_id + '_videoExpandBtn';
+            remoteExpandBtn.className = 'fas fa-ellipsis-vertical';
+            remoteExpandContainerDiv.className = 'expand-video-content';
+
             // attach to remote video nav bar
             !isMobileDevice && remoteVideoNavBar.appendChild(remoteVideoPinBtn);
 
+            buttons.remote.showVideoFocusBtn && remoteVideoNavBar.appendChild(remoteVideoFocusBtn);
+
+            remoteVideoNavBar.appendChild(remoteVideoMirrorBtn);
+
             buttons.remote.showVideoPipBtn && remoteVideoNavBar.appendChild(remoteVideoPiPBtn);
 
+            // Add to expand container div...
             if (buttons.remote.showZoomInOutBtn) {
-                remoteVideoNavBar.appendChild(remoteVideoZoomInBtn);
-                remoteVideoNavBar.appendChild(remoteVideoZoomOutBtn);
+                remoteExpandContainerDiv.appendChild(remoteVideoZoomInBtn);
+                remoteExpandContainerDiv.appendChild(remoteVideoZoomOutBtn);
             }
+            buttons.remote.showPrivateMessageBtn && remoteExpandContainerDiv.appendChild(remotePrivateMsgBtn);
+            buttons.remote.showFileShareBtn && remoteExpandContainerDiv.appendChild(remoteFileShareBtn);
+            buttons.remote.showShareVideoAudioBtn && remoteExpandContainerDiv.appendChild(remoteVideoAudioUrlBtn);
+            buttons.remote.showKickOutBtn && remoteExpandContainerDiv.appendChild(remotePeerKickOut);
+
+            remoteExpandBtnDiv.appendChild(remoteExpandBtn);
+            remoteExpandBtnDiv.appendChild(remoteExpandContainerDiv);
 
             isVideoFullScreenSupported && remoteVideoNavBar.appendChild(remoteVideoFullScreenBtn);
 
@@ -2884,10 +3450,7 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             }
             remoteVideoNavBar.appendChild(remoteHandStatusIcon);
 
-            buttons.remote.showPrivateMessageBtn && remoteVideoNavBar.appendChild(remotePrivateMsgBtn);
-            buttons.remote.showFileShareBtn && remoteVideoNavBar.appendChild(remoteFileShareBtn);
-            buttons.remote.showShareVideoAudioBtn && remoteVideoNavBar.appendChild(remoteVideoAudioUrlBtn);
-            buttons.remote.showKickOutBtn && remoteVideoNavBar.appendChild(remotePeerKickOut);
+            remoteVideoNavBar.appendChild(remoteExpandBtnDiv);
 
             remoteMedia.setAttribute('id', peer_id + '___video');
             remoteMedia.setAttribute('playsinline', true);
@@ -2896,9 +3459,11 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             remoteMedia.style.objectFit = peer_screen_status ? 'contain' : 'var(--video-object-fit)';
             remoteMedia.style.name = peer_id + (peer_screen_status ? '_typeScreen' : '_typeCam');
             remoteMedia.controls = remoteMediaControls;
+            remoteMedia.poster = images.poster;
 
             remoteVideoWrap.className = 'Camera';
             remoteVideoWrap.setAttribute('id', peer_id + '_videoWrap');
+            remoteVideoWrap.style.display = isHideALLVideosActive ? 'none' : 'block';
 
             // add elements to videoWrap div
             remoteVideoWrap.appendChild(remoteVideoNavBar);
@@ -2923,8 +3488,14 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             // handle video pin/unpin
             handleVideoPinUnpin(remoteMedia.id, remoteVideoPinBtn.id, remoteVideoWrap.id, peer_id, peer_screen_status);
 
+            // handle video focus mode
+            handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap, remoteMedia);
+
+            // handle video toggle mirror
+            handleVideoToggleMirror(remoteMedia.id, remoteVideoMirrorBtn.id);
+
             // handle vide picture in picture
-            buttons.remote.showVideoPipBtn && handlePictureInPicture(remoteVideoPiPBtn.id, remoteMedia.id);
+            buttons.remote.showVideoPipBtn && handlePictureInPicture(remoteVideoPiPBtn.id, remoteMedia.id, peer_id);
 
             // handle video zoomIn/Out
             ZOOM_IN_OUT_ENABLED &&
@@ -2997,6 +3568,10 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             peerAudioMediaElements[remoteAudioMedia.id] = remoteAudioWrap;
             // handle remote peers audio volume
             handleAudioVolume(remoteAudioVolumeId, remoteAudioMedia.id);
+            // Toggle visibility of volume control based on the audio status of the peer
+            elemDisplay(getId(remoteAudioVolumeId), peer_audio_status);
+            // Change audio output...
+            if (sinkId && audioOutputSelect.value) await changeAudioDestination(remoteAudioMedia);
             break;
         default:
             break;
@@ -3170,6 +3745,7 @@ function genAvatarSvg(peerName, avatarImgSize) {
  */
 function setPeerAvatarImgName(videoAvatarImageId, peerName) {
     const videoAvatarImageElement = getId(videoAvatarImageId);
+    videoAvatarImageElement.style.pointerEvents = 'none';
     if (useAvatarSvg) {
         const avatarImgSize = isMobileDevice ? 128 : 256;
         const avatarImgSvg = isValidEmail(peerName) ? genGravatar(peerName) : genAvatarSvg(peerName, avatarImgSize);
@@ -3196,6 +3772,24 @@ function setPeerChatAvatarImgName(avatar, peerName) {
             // console.log("Set My chat avatar image");
             rightChatAvatar = avatarImg;
             break;
+        default:
+            break;
+    }
+}
+
+/**
+ * Handle Video Toggle Mirror
+ * @param {string} videoId
+ * @param {string} videoToggleMirrorBtnId
+ */
+function handleVideoToggleMirror(videoId, videoToggleMirrorBtnId) {
+    const videoPlayer = getId(videoId);
+    const videoToggleMirrorBtn = getId(videoToggleMirrorBtnId);
+    if (videoPlayer && videoToggleMirrorBtn) {
+        // Toggle video mirror
+        videoToggleMirrorBtn.addEventListener('click', (e) => {
+            videoPlayer.classList.toggle('mirror');
+        });
     }
 }
 
@@ -3327,10 +3921,21 @@ function handleFileDragAndDrop(elemId, peer_id, itsMe = false) {
 
     videoPeer.addEventListener('dragover', function (e) {
         e.preventDefault();
+        e.stopPropagation();
+        e.target.parentElement.style.outline = '3px dashed var(--dd-color)';
+        document.querySelector('.Camera').style.outline = 'none';
+    });
+
+    videoPeer.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.parentElement.style.outline = 'none';
     });
 
     videoPeer.addEventListener('drop', function (e) {
         e.preventDefault();
+        e.stopPropagation();
+        e.target.parentElement.style.outline = 'none';
         if (itsMe) {
             return userLog('warning', 'You cannot send files to yourself.');
         }
@@ -3476,8 +4081,42 @@ function toggleVideoPin(position) {
             videoMediaContainer.style.width = '100% !important';
             videoMediaContainer.style.height = '25%';
             break;
+        default:
+            break;
     }
     resizeVideoMedia();
+}
+
+/**
+ * Handle video focus mode (hide all except selected one)
+ * @param {object} remoteVideoFocusBtn button
+ * @param {object} remoteVideoWrap videoWrapper
+ * @param {object} remoteMedia videoMedia
+ */
+function handleVideoFocusMode(remoteVideoFocusBtn, remoteVideoWrap, remoteMedia) {
+    if (remoteVideoFocusBtn) {
+        remoteVideoFocusBtn.addEventListener('click', (e) => {
+            if (isHideMeActive) {
+                return userLog('toast', 'To use this feature, please toggle Hide self view before', 'top-end', 6000);
+            }
+            isHideALLVideosActive = !isHideALLVideosActive;
+            e.target.style.color = isHideALLVideosActive ? 'lime' : 'white';
+            if (isHideALLVideosActive) {
+                remoteVideoWrap.style.width = '100%';
+                remoteVideoWrap.style.height = '100%';
+                remoteMedia.setAttribute('focus-mode', 'true');
+            } else {
+                resizeVideoMedia();
+                remoteMedia.removeAttribute('focus-mode');
+            }
+            const children = videoMediaContainer.children;
+            for (let child of children) {
+                if (child.id != remoteVideoWrap.id) {
+                    child.style.display = isHideALLVideosActive ? 'none' : 'block';
+                }
+            }
+        });
+    }
 }
 
 /**
@@ -3596,14 +4235,23 @@ function handleVideoZoomInOut(zoomInBtnId, zoomOutBtnId, mediaId, peerId = null)
  *
  * @param {string} btnId
  * @param {string} videoId
+ * @param {string} peerId
  */
-function handlePictureInPicture(btnId, videoId) {
+function handlePictureInPicture(btnId, videoId, peerId) {
     const btnPiP = getId(btnId);
     const video = getId(videoId);
+    const myVideoStatus = getId('myVideoStatusIcon');
+    const remoteVideoStatus = getId(peerId + '_videoStatus');
     btnPiP.addEventListener('click', () => {
         if (video.pictureInPictureElement) {
             video.exitPictureInPicture();
         } else if (document.pictureInPictureEnabled) {
+            if (
+                (myVideoStatus && myVideoStatus.className === className.videoOff) ||
+                (remoteVideoStatus && remoteVideoStatus.className === className.videoOff)
+            ) {
+                return msgPopup('warning', 'Prohibit Picture-in-Picture (PIP) on disabled video', 'top-end', 6000);
+            }
             video.requestPictureInPicture().catch((error) => {
                 console.error('Failed to enter Picture-in-Picture mode:', error);
                 msgPopup('warning', error.message, 'top-end', 6000);
@@ -3625,13 +4273,39 @@ function removeVideoPinMediaContainer(peer_id, force_remove = false) {
         force_remove
     ) {
         elemDisplay(videoPinMediaContainer, false);
+        isVideoPinned = false;
+        pinnedVideoPlayerId = null;
+        videoMediaContainerUnpin();
+        if (isChatPinned) {
+            chatPin();
+        }
+        if (isCaptionPinned) {
+            captionPin();
+        }
+        resizeVideoMedia();
+    }
+}
+
+/**
+ * Pin videoMediaContainer
+ */
+function videoMediaContainerPin() {
+    if (!isVideoPinned) {
+        videoMediaContainer.style.top = 0;
+        videoMediaContainer.style.width = '75%';
+        videoMediaContainer.style.height = '100%';
+    }
+}
+
+/**
+ * Unpin videoMediaContainer
+ */
+function videoMediaContainerUnpin() {
+    if (!isVideoPinned) {
         videoMediaContainer.style.top = 0;
         videoMediaContainer.style.right = null;
         videoMediaContainer.style.width = '100%';
         videoMediaContainer.style.height = '100%';
-        pinnedVideoPlayerId = null;
-        isVideoPinned = false;
-        resizeVideoMedia();
     }
 }
 
@@ -3726,25 +4400,30 @@ function refreshMyAudioStatus(localAudioMediaStream) {
 /**
  * Handle WebRTC left buttons
  */
-function manageLeftButtons() {
+function manageButtons() {
+    // Buttons bar
     setShareRoomBtn();
-    setHideMeButton();
-    setAudioBtn();
-    setVideoBtn();
-    setSwapCameraBtn();
-    setScreenShareBtn();
     setRecordStreamBtn();
+    setScreenShareBtn();
     setFullScreenBtn();
     setChatRoomBtn();
     setCaptionRoomBtn();
     setRoomEmojiButton();
     setChatEmojiBtn();
-    setMyHandBtn();
     setMyWhiteboardBtn();
+    setSnapshotRoomBtn();
     setMyFileShareBtn();
     setDocumentPiPBtn();
     setMySettingsBtn();
     setAboutBtn();
+
+    // Buttons bottom
+    setToggleExtraButtons();
+    setAudioBtn();
+    setVideoBtn();
+    setSwapCameraBtn();
+    setHideMeButton();
+    setMyHandBtn();
     setLeaveRoomBtn();
 }
 
@@ -3762,9 +4441,45 @@ function setShareRoomBtn() {
  */
 function setHideMeButton() {
     hideMeBtn.addEventListener('click', (e) => {
+        if (isHideALLVideosActive) {
+            return userLog('toast', 'To use this feature, please toggle video focus mode', 'top-end', 6000);
+        }
         isHideMeActive = !isHideMeActive;
         handleHideMe(isHideMeActive);
     });
+}
+
+/**
+ * Toggle extra buttons
+ */
+function setToggleExtraButtons() {
+    toggleExtraBtn.addEventListener('click', () => {
+        toggleExtraButtons();
+        if (!isMobileDevice) {
+            isToggleExtraBtnClicked = true;
+            setTimeout(() => {
+                isToggleExtraBtnClicked = false;
+            }, 2000);
+        }
+    });
+    toggleExtraBtn.addEventListener('mouseover', () => {
+        if (isToggleExtraBtnClicked || isMobileDevice) return;
+        if (buttonsBar.style.display === 'none') {
+            toggleExtraButtons();
+        }
+    });
+}
+
+/**
+ * Toggle extra buttons
+ */
+function toggleExtraButtons() {
+    const isButtonsBarHidden = buttonsBar.style.display === 'none' || buttonsBar.style.display === '';
+    const displayValue = isButtonsBarHidden ? 'flex' : 'none';
+    const cName = isButtonsBarHidden ? className.up : className.down;
+
+    elemDisplay(buttonsBar, isButtonsBarHidden, displayValue);
+    toggleExtraBtn.className = cName;
 }
 
 /**
@@ -3863,7 +4578,13 @@ function setRecordStreamBtn() {
  * Full screen button click event
  */
 function setFullScreenBtn() {
-    if (browserName != 'Safari') {
+    const fsSupported =
+        document.fullscreenEnabled ||
+        document.webkitFullscreenEnabled ||
+        document.mozFullScreenEnabled ||
+        document.msFullscreenEnabled;
+
+    if (fsSupported) {
         // detect esc from full screen mode
         document.addEventListener('fullscreenchange', (e) => {
             let fullscreenElement = document.fullscreenElement;
@@ -3888,6 +4609,11 @@ function setChatRoomBtn() {
     // adapt chat room size for mobile
     setChatRoomAndCaptionForMobile();
 
+    // Search peer by name
+    searchPeerBarName.addEventListener('keyup', () => {
+        searchPeer();
+    });
+
     // open hide chat room
     chatRoomBtn.addEventListener('click', (e) => {
         if (!isChatRoomVisible) {
@@ -3896,6 +4622,11 @@ function setChatRoomBtn() {
             hideChatRoomAndEmojiPicker();
             e.target.className = className.chatOn;
         }
+    });
+
+    // pin/unpin
+    msgerTogglePin.addEventListener('click', () => {
+        toggleChatPin();
     });
 
     // ghost theme + undo
@@ -3907,6 +4638,11 @@ function setChatRoomBtn() {
             e.target.className = className.ghost;
             setTheme();
         }
+    });
+
+    // dropdown chat menu
+    msgerDropDownMenuBtn.addEventListener('click', () => {
+        toggleChatDropDownMenu();
     });
 
     // show msger participants section
@@ -4051,7 +4787,7 @@ function setChatRoomBtn() {
  * Caption room buttons click event
  */
 function setCaptionRoomBtn() {
-    if (speechRecognition && buttons.main.showCaptionRoomBtn) {
+    if (buttons.main.showCaptionRoomBtn) {
         // open hide caption
         captionBtn.addEventListener('click', (e) => {
             if (!isCaptionBoxVisible) {
@@ -4068,6 +4804,11 @@ function setCaptionRoomBtn() {
         // minimize caption
         captionMinBtn.addEventListener('click', (e) => {
             captionMinimize();
+        });
+
+        // toggle caption pin
+        captionTogglePin.addEventListener('click', () => {
+            toggleCaptionPin();
         });
 
         // ghost theme + undo
@@ -4107,14 +4848,18 @@ function setCaptionRoomBtn() {
         // hide it
         elemDisplay(speechRecognitionStop, false);
 
-        // start recognition speech
-        speechRecognitionStart.addEventListener('click', (e) => {
-            startSpeech();
-        });
-        // stop recognition speech
-        speechRecognitionStop.addEventListener('click', (e) => {
-            stopSpeech();
-        });
+        if (speechRecognition) {
+            // start recognition speech
+            speechRecognitionStart.addEventListener('click', (e) => {
+                startSpeech();
+            });
+            // stop recognition speech
+            speechRecognitionStop.addEventListener('click', (e) => {
+                stopSpeech();
+            });
+        } else {
+            elemDisplay(captionFooter, false);
+        }
     } else {
         elemDisplay(captionBtn, false);
         // https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API#browser_compatibility
@@ -4163,7 +4908,7 @@ function setRoomEmojiButton() {
     function toggleEmojiPicker() {
         if (emojiPickerContainer.style.display === 'block') {
             elemDisplay(emojiPickerContainer, false);
-            setColor(roomEmojiPickerBtn, 'black');
+            setColor(roomEmojiPickerBtn, 'var(--btn-bar-bg-color)');
         } else {
             emojiPickerContainer.style.display = 'block';
             setColor(roomEmojiPickerBtn, 'green');
@@ -4230,6 +4975,11 @@ function setMyWhiteboardBtn() {
     whiteboardRedoBtn.addEventListener('click', (e) => {
         whiteboardAction(getWhiteboardAction('redo'));
     });
+    whiteboardDropDownMenuBtn.addEventListener('click', function () {
+        whiteboardDropdownMenu.style.display === 'block'
+            ? elemDisplay(whiteboardDropdownMenu, false)
+            : elemDisplay(whiteboardDropdownMenu, true, 'block');
+    });
     whiteboardSaveBtn.addEventListener('click', (e) => {
         wbCanvasSaveImg();
     });
@@ -4263,9 +5013,11 @@ function setMyWhiteboardBtn() {
     whiteboardCleanBtn.addEventListener('click', (e) => {
         confirmCleanBoard();
     });
-    whiteboardLockBtn.addEventListener('change', (e) => {
-        wbIsLock = !wbIsLock;
-        whiteboardAction(getWhiteboardAction(wbIsLock ? 'lock' : 'unlock'));
+    whiteboardLockBtn.addEventListener('click', (e) => {
+        toggleLockUnlockWhiteboard();
+    });
+    whiteboardUnlockBtn.addEventListener('click', (e) => {
+        toggleLockUnlockWhiteboard();
     });
     whiteboardCloseBtn.addEventListener('click', (e) => {
         handleWhiteboardToggle();
@@ -4281,6 +5033,12 @@ function setMyWhiteboardBtn() {
         wbIsBgTransparent = !wbIsBgTransparent;
         //setWhiteboardBgColor(wbIsBgTransparent ? 'rgba(0, 0, 0, 0.100)' : wbBackgroundColorEl.value);
         wbIsBgTransparent ? wbCanvasBackgroundColor('rgba(0, 0, 0, 0.100)') : setTheme();
+    });
+    // Hide the whiteboard dropdown menu if clicked outside
+    document.addEventListener('click', (event) => {
+        if (!whiteboardDropDownMenuBtn.contains(event.target) && !whiteboardDropDownMenuBtn.contains(event.target)) {
+            elemDisplay(whiteboardDropdownMenu, false);
+        }
     });
 }
 
@@ -4301,9 +5059,70 @@ function setMyFileShareBtn() {
     sendAbortBtn.addEventListener('click', (e) => {
         abortFileTransfer();
     });
+    receiveAbortBtn.addEventListener('click', (e) => {
+        abortReceiveFileTransfer();
+    });
     receiveHideBtn.addEventListener('click', (e) => {
         hideFileTransfer();
     });
+}
+
+/**
+ * Set snapshot room button click event
+ */
+function setSnapshotRoomBtn() {
+    snapshotRoomBtn.addEventListener('click', async (e) => {
+        await snapshotRoom();
+    });
+}
+
+/**
+ * Snapshot Screen, Window or Tab
+ */
+async function snapshotRoom() {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const video = document.createElement('video');
+
+    try {
+        const captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+        });
+
+        video.srcObject = captureStream;
+        video.onloadedmetadata = () => {
+            video.play();
+        };
+
+        // Wait for the video to start playing
+        video.onplay = async () => {
+            playSound('snapshot');
+
+            // Sleep some ms
+            await sleep(1000);
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Create a link element to download the image
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'Room_' + roomId + '_' + getDataTimeString() + '_snapshot.png';
+            link.click();
+
+            // Stop all video tracks to release the capture stream
+            captureStream.getTracks().forEach((track) => track.stop());
+
+            // Clean up: remove references to avoid memory leaks
+            video.srcObject = null;
+            canvas.width = 0;
+            canvas.height = 0;
+        };
+    } catch (err) {
+        console.error('Error: ' + err);
+        userLog('error', 'Snapshot room error ' + err.message, 6000);
+    }
 }
 
 /**
@@ -4459,6 +5278,7 @@ function setMySettingsBtn() {
     mySettingsBtn.addEventListener('click', (e) => {
         if (isMobileDevice) {
             elemDisplay(buttonsBar, false);
+            elemDisplay(bottomButtons, false);
             isButtonsVisible = false;
         }
         hideShowMySettings();
@@ -4525,6 +5345,18 @@ function setMySettingsBtn() {
     resumeRecBtn.addEventListener('click', (e) => {
         resumeRecording();
     });
+    // Styles
+    themeCustom.check.onchange = (e) => {
+        themeCustom.keep = e.currentTarget.checked;
+        themeSelect.disabled = themeCustom.keep;
+        lsSettings.theme_custom = themeCustom.keep;
+        lsSettings.theme_color = themeCustom.color;
+        lS.setSettings(lsSettings);
+        setTheme();
+        userLog('toast', `${icons.theme} Custom theme keep ` + (themeCustom.keep ? 'ON' : 'OFF'));
+        playSound('switch');
+        e.target.blur();
+    };
 }
 
 /**
@@ -4552,6 +5384,7 @@ function handleBodyOnMouseMove() {
     document.body.addEventListener('mousemove', (e) => {
         showButtonsBarAndMenu();
     });
+
     // detect buttons bar over
     buttonsBar.addEventListener('mouseover', () => {
         isButtonsBarOver = true;
@@ -4559,6 +5392,14 @@ function handleBodyOnMouseMove() {
     buttonsBar.addEventListener('mouseout', () => {
         isButtonsBarOver = false;
     });
+
+    bottomButtons.addEventListener('mouseover', () => {
+        isButtonsBarOver = true;
+    });
+    bottomButtons.addEventListener('mouseout', () => {
+        isButtonsBarOver = false;
+    });
+
     checkButtonsBarAndMenu();
 }
 
@@ -4588,6 +5429,9 @@ function setupMySettings() {
     tabProfileBtn.addEventListener('click', (e) => {
         openTab(e, 'tabProfile');
     });
+    tabNetworkBtn.addEventListener('click', (e) => {
+        openTab(e, 'tabNetwork');
+    });
     tabStylingBtn.addEventListener('click', (e) => {
         openTab(e, 'tabStyling');
     });
@@ -4609,7 +5453,7 @@ function setupMySettings() {
     // select audio input
     audioInputSelect.addEventListener('change', async () => {
         await changeLocalMicrophone(audioInputSelect.value);
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.audio, audioInputSelect.selectedIndex, audioInputSelect.value);
+        refreshLsDevices();
     });
     // advance audio options
     micOptionsBtn.addEventListener('click', function () {
@@ -4666,16 +5510,16 @@ function setupMySettings() {
         micOptionsBtn.click();
     });
     // select audio output
-    audioOutputSelect.addEventListener('change', (e) => {
-        changeAudioDestination();
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.speaker, audioOutputSelect.selectedIndex, audioOutputSelect.value);
+    audioOutputSelect.addEventListener('change', async () => {
+        await changeAudioDestination();
+        refreshLsDevices();
     });
     // select video input
     videoSelect.addEventListener('change', async () => {
         await changeLocalCamera(videoSelect.value);
         await handleLocalCameraMirror();
         await documentPictureInPictureClose();
-        lS.setLocalStorageDevices(lS.MEDIA_TYPE.video, videoSelect.selectedIndex, videoSelect.value);
+        refreshLsDevices();
     });
     // select video quality
     videoQualitySelect.addEventListener('change', async (e) => {
@@ -4736,6 +5580,17 @@ function setupMySettings() {
         elemDisplay(pinUnpinGridDiv, false);
     }
     // room actions
+    captionEveryoneBtn.addEventListener('click', (e) => {
+        sendToServer('caption', {
+            room_id: roomId,
+            peer_name: myPeerName,
+            action: 'start',
+            data: {
+                recognitionLanguageIndex: recognitionLanguage.selectedIndex,
+                recognitionDialectIndex: recognitionDialect.selectedIndex,
+            },
+        });
+    });
     muteEveryoneBtn.addEventListener('click', (e) => {
         disableAllPeers('audio');
     });
@@ -4774,6 +5629,10 @@ function loadSettingsFromLocalStorage() {
     switchShare.checked = notify;
     switchAudioPitchBar.checked = isAudioPitchBar;
     switchH264Recording.checked = recPrioritizeH264;
+
+    themeCustom.check.checked = themeCustom.keep;
+    themeSelect.disabled = themeCustom.keep;
+    themeCustom.input.value = themeCustom.color;
 
     switchAutoGainControl.checked = lsSettings.mic_auto_gain_control;
     switchEchoCancellation.checked = lsSettings.mic_echo_cancellations;
@@ -4852,6 +5711,38 @@ async function handleLocalCameraMirror() {
 }
 
 /**
+ * Toggle username emoji
+ */
+function toggleUsernameEmoji() {
+    usernameEmoji.classList.toggle('hidden');
+}
+
+/**
+ * Handle username emoji picker
+ */
+function handleUsernameEmojiPicker() {
+    const pickerOptions = {
+        theme: 'dark',
+        onEmojiSelect: addEmojiToUsername,
+    };
+    const emojiUsernamePicker = new EmojiMart.Picker(pickerOptions);
+    usernameEmoji.appendChild(emojiUsernamePicker);
+
+    function addEmojiToUsername(data) {
+        getId('usernameInput').value += data.native;
+        toggleUsernameEmoji();
+    }
+}
+
+/**
+ * Toggle vide mirror
+ */
+function toggleInitVideoMirror() {
+    initVideo.classList.toggle('mirror');
+    myVideo.classList.toggle('mirror');
+}
+
+/**
  * Get audio - video constraints
  * @returns {object} audio - video constraints
  */
@@ -4882,60 +5773,87 @@ async function getAudioVideoConstraints() {
  */
 async function getVideoConstraints(videoQuality) {
     const frameRate = videoMaxFrameRate;
+    let constraints = {};
 
     switch (videoQuality) {
         case 'default':
             if (forceCamMaxResolutionAndFps) {
-                // This will make the browser use the maximum resolution available as default, `up to 4K and 60fps`.
-                return {
-                    width: { ideal: 3840 },
-                    height: { ideal: 2160 },
+                // This will make the browser use the maximum resolution available as default, `up to 8K and 60fps`.
+                constraints = {
+                    width: { ideal: 7680 },
+                    height: { ideal: 4320 },
                     frameRate: { ideal: 60 },
                 }; // video cam constraints default
+            } else {
+                // This will make the browser use as ideal hdVideo and 30fps.
+                constraints = {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 },
+                }; // on default as hdVideo
             }
-            // This will make the browser use hdVideo and 30fps.
-            return {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 30 },
-            }; // on default as hdVideo
+            break;
         case 'qvgaVideo':
-            return {
+            constraints = {
                 width: { exact: 320 },
                 height: { exact: 240 },
                 frameRate: frameRate,
             }; // video cam constraints low bandwidth
+            break;
         case 'vgaVideo':
-            return {
+            constraints = {
                 width: { exact: 640 },
                 height: { exact: 480 },
                 frameRate: frameRate,
             }; // video cam constraints medium bandwidth
+            break;
         case 'hdVideo':
-            return {
+            constraints = {
                 width: { exact: 1280 },
                 height: { exact: 720 },
                 frameRate: frameRate,
             }; // video cam constraints high bandwidth
+            break;
         case 'fhdVideo':
-            return {
+            constraints = {
                 width: { exact: 1920 },
                 height: { exact: 1080 },
                 frameRate: frameRate,
             }; // video cam constraints very high bandwidth
+            break;
         case '2kVideo':
-            return {
+            constraints = {
                 width: { exact: 2560 },
                 height: { exact: 1440 },
                 frameRate: frameRate,
             }; // video cam constraints ultra high bandwidth
+            break;
         case '4kVideo':
-            return {
+            constraints = {
                 width: { exact: 3840 },
                 height: { exact: 2160 },
                 frameRate: frameRate,
             }; // video cam constraints ultra high bandwidth
+            break;
+        case '6kVideo':
+            constraints = {
+                width: { exact: 6144 },
+                height: { exact: 3456 },
+                frameRate: frameRate,
+            }; // video cam constraints Very ultra high bandwidth
+            break;
+        case '8kVideo':
+            constraints = {
+                width: { exact: 7680 },
+                height: { exact: 4320 },
+                frameRate: frameRate,
+            }; // video cam constraints Very ultra high bandwidth
+            break;
+        default:
+            break;
     }
+    console.log('Video constraints', constraints);
+    return constraints;
 }
 
 /**
@@ -4953,8 +5871,8 @@ async function getAudioConstraints() {
         constraints = {
             audio: {
                 autoGainControl: switchAutoGainControl.checked,
-                echoCancellation: switchNoiseSuppression.checked,
-                noiseSuppression: switchEchoCancellation.checked,
+                echoCancellation: switchEchoCancellation.checked,
+                noiseSuppression: switchNoiseSuppression.checked,
                 sampleRate: parseInt(sampleRateSelect.value),
                 sampleSize: parseInt(sampleSizeSelect.value),
                 channelCount: parseInt(channelCountSelect.value),
@@ -4964,6 +5882,7 @@ async function getAudioConstraints() {
             video: false,
         };
     }
+    console.log('Audio constraints', constraints);
     return constraints;
     // return {
     //     echoCancellation: true,
@@ -5017,11 +5936,23 @@ async function setLocalVideoQuality() {
 }
 
 /**
- * Change Speaker
+ * Change audio output (Speaker)
  */
-function changeAudioDestination() {
+async function changeAudioDestination(audioElement = false) {
     const audioDestination = audioOutputSelect.value;
-    attachSinkId(myAudio, audioDestination);
+    if (audioElement) {
+        // change audio output to specified participant audio
+        await attachSinkId(audioElement, audioDestination);
+    } else {
+        const audioElements = audioMediaContainer.querySelectorAll('audio');
+        // change audio output for all participants audio
+        audioElements.forEach(async (audioElement) => {
+            // discard my own audio on this device, so I won't hear myself.
+            if (audioElement.id != 'myAudio') {
+                await attachSinkId(audioElement, audioDestination);
+            }
+        });
+    }
 }
 
 /**
@@ -5029,7 +5960,7 @@ function changeAudioDestination() {
  * @param {object} element audio element to attach the audio output
  * @param {string} sinkId uuid audio output device
  */
-function attachSinkId(element, sinkId) {
+async function attachSinkId(element, sinkId) {
     if (typeof element.sinkId !== 'undefined') {
         element
             .setSinkId(sinkId)
@@ -5038,9 +5969,17 @@ function attachSinkId(element, sinkId) {
             })
             .catch((err) => {
                 let errorMessage = err;
-                if (err.name === 'SecurityError')
-                    errorMessage = `You need to use HTTPS for selecting audio output device: ${err}`;
+                if (err.name === 'SecurityError') {
+                    errorMessage = 'SecurityError: You need to use HTTPS for selecting audio output device';
+                } else if (err.name === 'NotAllowedError') {
+                    errorMessage = 'NotAllowedError: Permission to use audio output device is not granted';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage = 'NotFoundError: The specified audio output device was not found';
+                } else {
+                    errorMessage = `Error: ${err}`;
+                }
                 console.error(errorMessage);
+                userLog('error', `attachSinkId: ${errorMessage}`);
                 // Jump back to first output device in the list as it's the default.
                 audioOutputSelect.selectedIndex = 0;
             });
@@ -5078,7 +6017,9 @@ function showButtonsBarAndMenu() {
     )
         return;
     toggleClassElements('navbar', 'block');
-    elemDisplay(buttonsBar, true, 'flex');
+    //elemDisplay(buttonsBar, true, 'flex');
+    toggleExtraBtn.className = className.down;
+    elemDisplay(bottomButtons, true, 'flex');
     isButtonsVisible = true;
 }
 
@@ -5088,7 +6029,9 @@ function showButtonsBarAndMenu() {
 function checkButtonsBarAndMenu() {
     if (!isButtonsBarOver) {
         toggleClassElements('navbar', 'none');
+        toggleExtraBtn.className = className.up;
         elemDisplay(buttonsBar, false);
+        elemDisplay(bottomButtons, false);
         isButtonsVisible = false;
     }
     setTimeout(() => {
@@ -5212,11 +6155,12 @@ function shareRoomByEmail() {
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
         preConfirm: () => {
             const roomURL = getRoomURL();
-            const selectedDateTime = document.getElementById('datetimePicker').value;
             const newLine = '%0D%0A%0D%0A';
+            const selectedDateTime = document.getElementById('datetimePicker').value;
+            const roomPassword = isRoomLocked && thisRoomPassword ? 'Password: ' + thisRoomPassword + newLine : '';
             const email = '';
             const emailSubject = `Please join our MiroTalk P2P Video Chat Meeting`;
-            const emailBody = `The meeting is scheduled at: ${newLine} DateTime: ${selectedDateTime} ${newLine} Click to join: ${roomURL} ${newLine}`;
+            const emailBody = `The meeting is scheduled at: ${newLine} DateTime: ${selectedDateTime} ${newLine}${roomPassword}Click to join: ${roomURL} ${newLine}`;
             document.location = 'mailto:' + email + '?subject=' + emailSubject + '&body=' + emailBody;
         },
     });
@@ -5232,9 +6176,10 @@ function shareRoomByEmail() {
  * @returns {url} roomURL
  */
 function getRoomURL() {
-    return isHostProtected && isPeerAuthEnabled
-        ? window.location.origin + '/join/?room=' + roomId + '&username=' + myUsername + '&password=' + myPassword
-        : myRoomUrl;
+    return myRoomUrl;
+    // return isHostProtected && isPeerAuthEnabled
+    //     ? window.location.origin + '/join/?room=' + roomId + '&token=' + myToken
+    //     : myRoomUrl;
 }
 
 /**
@@ -5260,7 +6205,7 @@ function handleAudio(e, init, force = null) {
 
     if (init) {
         initAudioBtn.className = audioClassName;
-        setTippy(initAudioBtn, audioStatus ? 'Stop the audio' : 'Start the audio', 'top');
+        setTippy(initAudioBtn, audioStatus ? 'Stop the audio' : 'Start the audio', 'right');
         initMicrophoneSelect.disabled = !audioStatus;
         initSpeakerSelect.disabled = !audioStatus;
         lS.setInitConfig(lS.MEDIA_TYPE.audio, audioStatus);
@@ -5308,6 +6253,7 @@ async function handleVideo(e, init, force = null) {
         initVideoSelect.disabled = !videoStatus;
         lS.setInitConfig(lS.MEDIA_TYPE.video, videoStatus);
         initVideoContainerShow(videoStatus);
+        elemDisplay(initVideoMirrorBtn, videoStatus);
     }
 
     if (!videoStatus) {
@@ -5413,8 +6359,10 @@ async function toggleScreenSharing(init = false) {
     try {
         // Set screen frame rate
         screenMaxFrameRate = parseInt(screenFpsSelect.value, 10);
+
+        // Screen share constraints
         const constraints = {
-            audio: false,
+            audio: myAudioStatus ? false : true,
             video: { frameRate: screenMaxFrameRate },
         };
 
@@ -5454,12 +6402,12 @@ async function toggleScreenSharing(init = false) {
             await emitPeerStatus('screen', myScreenStatus);
 
             await stopLocalVideoTrack();
-            await refreshMyLocalStream(screenMediaPromise);
-            await refreshMyStreamToPeers(screenMediaPromise);
+            await refreshMyLocalStream(screenMediaPromise, !useAudio);
+            await refreshMyStreamToPeers(screenMediaPromise, !useAudio);
 
             if (init) {
                 // Handle init media stream
-                if (initStream) stopTracks(initStream);
+                if (initStream) await stopTracks(initStream);
                 initStream = screenMediaPromise;
                 if (hasVideoTrack(initStream)) {
                     const newInitStream = new MediaStream([initStream.getVideoTracks()[0]]);
@@ -5628,11 +6576,31 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
     // Check if the passed stream has an audio track
     const streamHasAudioTrack = hasAudioTrack(stream);
 
+    // Check if the passed stream has an video track
+    const streamHasVideoTrack = hasVideoTrack(stream);
+
+    // Check if the local stream has an audio track
+    const localStreamHasAudioTrack = hasAudioTrack(localAudioMediaStream);
+
+    // Check if the local stream has an video track
+    const localStreamHasVideoTrack = hasVideoTrack(localVideoMediaStream);
+
+    // Determine the audio stream to add to peers
+    const audioStream = streamHasAudioTrack ? stream : localStreamHasAudioTrack && localAudioMediaStream;
+
     // Determine the audio track to replace to peers
-    const myAudioTrack =
+    const audioTrack =
         streamHasAudioTrack && (localAudioTrackChange || isScreenStreaming)
             ? stream.getAudioTracks()[0]
-            : localAudioMediaStream && localAudioMediaStream.getAudioTracks()[0];
+            : localStreamHasAudioTrack && localAudioMediaStream.getAudioTracks()[0];
+
+    // Determine the video stream to add to peers
+    const videoStream = streamHasVideoTrack ? stream : localStreamHasVideoTrack && localVideoMediaStream;
+
+    // Determine the video track to replace to peers
+    const videoTracks = streamHasVideoTrack
+        ? stream.getVideoTracks()[0]
+        : localStreamHasVideoTrack && localVideoMediaStream.getVideoTracks()[0];
 
     // Refresh my stream to connected peers except myself
     for (const peer_id in peerConnections) {
@@ -5642,25 +6610,38 @@ async function refreshMyStreamToPeers(stream, localAudioTrackChange = false) {
         const videoSender = peerConnections[peer_id].getSenders().find((s) => s.track && s.track.kind === 'video');
 
         if (useVideo && videoSender) {
-            videoSender.replaceTrack(stream.getVideoTracks()[0]);
-            console.log('REPLACE VIDEO TRACK TO', { peer_id, peer_name });
+            videoSender.replaceTrack(videoTracks);
+            console.log('REPLACE VIDEO TRACK TO', { peer_id, peer_name, video: videoTracks });
         } else {
-            // Add video track if sender does not exist
-            stream.getTracks().forEach((track) => {
-                if (track.kind === 'video') {
-                    peerConnections[peer_id].addTrack(track);
-                    handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
-                    console.log('ADD VIDEO TRACK TO', { peer_id, peer_name });
-                }
-            });
+            if (videoStream) {
+                // Add video track if sender does not exist
+                videoStream.getTracks().forEach(async (track) => {
+                    if (track.kind === 'video') {
+                        peerConnections[peer_id].addTrack(track);
+                        await handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
+                        console.log('ADD VIDEO TRACK TO', { peer_id, peer_name, video: track });
+                    }
+                });
+            }
         }
 
         // Replace audio track
         const audioSender = peerConnections[peer_id].getSenders().find((s) => s.track && s.track.kind === 'audio');
 
-        if (audioSender) {
-            audioSender.replaceTrack(myAudioTrack);
-            console.log('REPLACE AUDIO TRACK TO', { peer_id, peer_name });
+        if (audioSender && audioTrack) {
+            audioSender.replaceTrack(audioTrack);
+            console.log('REPLACE AUDIO TRACK TO', { peer_id, peer_name, audio: audioTrack });
+        } else {
+            if (audioStream) {
+                // Add audio track if sender does not exist
+                audioStream.getTracks().forEach(async (track) => {
+                    if (track.kind === 'audio') {
+                        peerConnections[peer_id].addTrack(track);
+                        await handleRtcOffer(peer_id); // https://groups.google.com/g/discuss-webrtc/c/Ky3wf_hg1l8?pli=1
+                        console.log('ADD AUDIO TRACK TO', { peer_id, peer_name, audio: track });
+                    }
+                });
+            }
         }
     }
 }
@@ -5765,7 +6746,7 @@ function checkRecording() {
  */
 function handleRecordingError(error, popupLog = true) {
     console.error('Recording error', error);
-    if (popupLog) userLog('error', error, 6000);
+    if (popupLog) userLog('error', error);
 }
 
 /**
@@ -6004,7 +6985,7 @@ function getAudioStreamFromAudioElements() {
  * @param {string} action recording action
  */
 function notifyRecording(fromId, from, action) {
-    const msg = '🔴 ' + action + ' recording.';
+    const msg = '🔴 ' + action + ' conference recording';
     const chatMessage = {
         from: from,
         fromId: fromId,
@@ -6014,7 +6995,18 @@ function notifyRecording(fromId, from, action) {
     };
     handleDataChannelChat(chatMessage);
     if (!showChatOnMessage) {
-        msgHTML(null, images.recording, null, `${from}<br /><h1>${action} recording</h1>`);
+        const recAgree = action != 'Stop' ? 'Your presence implies you agree to being recorded' : '';
+        toastMessage(
+            null,
+            null,
+            `${from}
+            <br /><br />
+            <span>${msg}</span>
+            <br /><br />
+            ${recAgree}`,
+            'top-end',
+            6000,
+        );
     }
 }
 
@@ -6210,14 +7202,20 @@ function showChatRoomDraggable() {
     playSound('newMessage');
     if (isMobileDevice) {
         elemDisplay(buttonsBar, false);
+        elemDisplay(bottomButtons, false);
         isButtonsVisible = false;
     }
+    //chatLeftCenter();
+    chatCenter();
+
     chatRoomBtn.className = className.chatOff;
-    msgerDraggable.style.top = '50%';
-    msgerDraggable.style.left = isMobileDevice ? '50%' : '25%';
-    msgerDraggable.style.display = 'flex';
     isChatRoomVisible = true;
-    setTippy(chatRoomBtn, 'Close the chat', placement);
+
+    if (isDesktopDevice && canBePinned()) {
+        toggleChatPin();
+    }
+
+    setTippy(chatRoomBtn, 'Close the chat', bottomButtonsPlacement);
 }
 
 /**
@@ -6227,14 +7225,28 @@ function showCaptionDraggable() {
     playSound('newMessage');
     if (isMobileDevice) {
         elemDisplay(buttonsBar, false);
+        elemDisplay(bottomButtons, false);
         isButtonsVisible = false;
     }
+    //captionRightCenter();
+    captionCenter();
     captionBtn.className = 'far fa-closed-captioning';
-    captionDraggable.style.top = '50%';
-    captionDraggable.style.left = isMobileDevice ? '50%' : '75%';
-    captionDraggable.style.display = 'flex';
     isCaptionBoxVisible = true;
+
+    if (isDesktopDevice && canBePinned()) {
+        toggleCaptionPin();
+    }
+
     setTippy(captionBtn, 'Close the caption', placement);
+}
+
+/**
+ * Toggle Chat dropdown menu
+ */
+function toggleChatDropDownMenu() {
+    msgerDropDownContent.style.display === 'block'
+        ? (msgerDropDownContent.style.display = 'none')
+        : (msgerDropDownContent.style.display = 'block');
 }
 
 /**
@@ -6255,16 +7267,109 @@ function chatMinimize() {
     elemDisplay(msgerMinBtn, false);
     elemDisplay(msgerMaxBtn, true);
     chatCenter();
-    setSP('--msger-width', '420px');
-    setSP('--msger-height', '680px');
+    if (!isChatPinned) {
+        if (isMobileDevice) {
+            setSP('--msger-width', '99%');
+            setSP('--msger-height', '99%');
+        } else {
+            setSP('--msger-width', '420px');
+            setSP('--msger-height', '680px');
+        }
+    } else {
+        setSP('--msger-width', '25%');
+        setSP('--msger-height', '100%');
+    }
 }
 
 /**
  * Set chat position
  */
 function chatCenter() {
+    if (!isChatPinned) {
+        msgerDraggable.style.position = 'fixed';
+        msgerDraggable.style.display = 'flex';
+        msgerDraggable.style.top = '50%';
+        msgerDraggable.style.left = '50%';
+        msgerDraggable.style.transform = 'translate(-50%, -50%)';
+        msgerDraggable.style.webkitTransform = 'translate(-50%, -50%)';
+        msgerDraggable.style.mozTransform = 'translate(-50%, -50%)';
+    }
+}
+
+/**
+ * Check if the element can be pinned based of viewport size
+ * @returns boolean
+ */
+function canBePinned() {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    return viewportWidth >= 1024 && viewportHeight >= 768;
+}
+
+/**
+ * Toggle Chat Pin
+ */
+function toggleChatPin() {
+    if (isCaptionPinned) {
+        return userLog('toast', 'Please unpin the Caption that appears to be currently pinned');
+    }
+    isChatPinned ? chatUnpin() : chatPin();
+    playSound('click');
+}
+
+/**
+ * Handle chat pin
+ */
+function chatPin() {
+    videoMediaContainerPin();
+    chatPinned();
+    isChatPinned = true;
+    setColor(msgerTogglePin, 'lime');
+    resizeVideoMedia();
+    msgerDraggable.style.resize = 'none';
+    if (!isMobileDevice) undragElement(msgerDraggable, msgerHeader);
+}
+
+/**
+ * Handle chat unpin
+ */
+function chatUnpin() {
+    videoMediaContainerUnpin();
+    setSP('--msger-width', '420px');
+    setSP('--msger-height', '680px');
+    elemDisplay(msgerMinBtn, false);
+    buttons.chat.showMaxBtn && elemDisplay(msgerMaxBtn, true);
+    isChatPinned = false;
+    //chatLeftCenter();
+    chatCenter();
+    setColor(msgerTogglePin, 'white');
+    resizeVideoMedia();
+    msgerDraggable.style.resize = 'both';
+    if (!isMobileDevice) dragElement(msgerDraggable, msgerHeader);
+}
+
+/**
+ * Move Chat center left
+ */
+function chatLeftCenter() {
+    msgerDraggable.style.position = 'fixed';
+    msgerDraggable.style.display = 'flex';
     msgerDraggable.style.top = '50%';
-    msgerDraggable.style.left = '50%';
+    msgerDraggable.style.left = isMobileDevice ? '50%' : '25%';
+    msgerDraggable.style.transform = 'translate(-50%, -50%)';
+}
+
+/**
+ * Chat is pinned
+ */
+function chatPinned() {
+    msgerDraggable.style.position = 'absolute';
+    msgerDraggable.style.top = 0;
+    msgerDraggable.style.right = 0;
+    msgerDraggable.style.left = null;
+    msgerDraggable.style.transform = null;
+    setSP('--msger-width', '25%');
+    setSP('--msger-height', '100%');
 }
 
 /**
@@ -6285,16 +7390,99 @@ function captionMinimize() {
     elemDisplay(captionMinBtn, false);
     elemDisplay(captionMaxBtn, true);
     captionCenter();
-    setSP('--caption-width', '420px');
-    setSP('--caption-height', '680px');
+    if (!isCaptionPinned) {
+        if (isMobileDevice) {
+            setSP('--caption-width', '99%');
+            setSP('--caption-height', '99%');
+        } else {
+            setSP('--caption-width', '420px');
+            setSP('--caption-height', '680px');
+        }
+    } else {
+        setSP('--caption-width', '25%');
+        setSP('--caption-height', '100%');
+    }
 }
 
 /**
- * Set caption position
+ * Set chat position
  */
 function captionCenter() {
+    if (!isCaptionPinned) {
+        captionDraggable.style.position = 'fixed';
+        captionDraggable.style.display = 'flex';
+        captionDraggable.style.top = '50%';
+        captionDraggable.style.left = '50%';
+        captionDraggable.style.transform = 'translate(-50%, -50%)';
+        captionDraggable.style.webkitTransform = 'translate(-50%, -50%)';
+        captionDraggable.style.mozTransform = 'translate(-50%, -50%)';
+    }
+}
+
+/**
+ * Toggle Caption Pin
+ */
+function toggleCaptionPin() {
+    if (isChatPinned) {
+        return userLog('toast', 'Please unpin the Chat that appears to be currently pinned');
+    }
+    isCaptionPinned ? captionUnpin() : captionPin();
+    playSound('click');
+}
+
+/**
+ * Handle caption pin
+ */
+function captionPin() {
+    videoMediaContainerPin();
+    captionPinned();
+    isCaptionPinned = true;
+    setColor(captionTogglePin, 'lime');
+    resizeVideoMedia();
+    captionDraggable.style.resize = 'none';
+    if (!isMobileDevice) undragElement(captionDraggable, captionHeader);
+}
+
+/**
+ * Handle caption unpin
+ */
+function captionUnpin() {
+    videoMediaContainerUnpin();
+    setSP('--caption-width', '420px');
+    setSP('--caption-height', '680px');
+    elemDisplay(captionMinBtn, false);
+    buttons.caption.showMaxBtn && elemDisplay(captionMaxBtn, true);
+    isCaptionPinned = false;
+    //captionRightCenter();
+    captionCenter();
+    setColor(captionTogglePin, 'white');
+    resizeVideoMedia();
+    captionDraggable.style.resize = 'both';
+    if (!isMobileDevice) dragElement(captionDraggable, captionHeader);
+}
+
+/**
+ * Move Caption center right
+ */
+function captionRightCenter() {
+    captionDraggable.style.position = 'fixed';
+    captionDraggable.style.display = 'flex';
     captionDraggable.style.top = '50%';
-    captionDraggable.style.left = '50%';
+    captionDraggable.style.left = isMobileDevice ? '50%' : '75%';
+    captionDraggable.style.transform = 'translate(-50%, -50%)';
+}
+
+/**
+ * Caption is pinned
+ */
+function captionPinned() {
+    captionDraggable.style.position = 'absolute';
+    captionDraggable.style.top = 0;
+    captionDraggable.style.right = 0;
+    captionDraggable.style.left = null;
+    captionDraggable.style.transform = null;
+    setSP('--caption-width', '25%');
+    setSP('--caption-height', '100%');
 }
 
 /**
@@ -6320,8 +7508,10 @@ function cleanMessages() {
                 msgerChat.removeChild(msgs);
                 msgs = msgerChat.firstChild;
             }
-            // clean object
+            // clean chat messages
             chatMessages = [];
+            // clean chatGPT context
+            chatGPTcontext = [];
             playSound('delete');
         }
     });
@@ -6361,19 +7551,25 @@ function cleanCaptions() {
  * Hide chat room and emoji picker
  */
 function hideChatRoomAndEmojiPicker() {
+    if (isChatPinned) {
+        chatUnpin();
+    }
     elemDisplay(msgerDraggable, false);
     elemDisplay(msgerEmojiPicker, false);
     setColor(msgerEmojiBtn, '#FFFFFF');
     chatRoomBtn.className = className.chatOn;
     isChatRoomVisible = false;
     isChatEmojiVisible = false;
-    setTippy(chatRoomBtn, 'Open the chat', placement);
+    setTippy(chatRoomBtn, 'Open the chat', bottomButtonsPlacement);
 }
 
 /**
  * Hide chat room and emoji picker
  */
 function hideCaptionBox() {
+    if (isCaptionPinned) {
+        captionUnpin();
+    }
     elemDisplay(captionDraggable, false);
     captionBtn.className = className.captionOn;
     isCaptionBoxVisible = false;
@@ -6545,7 +7741,7 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
     const getPrivateMsg = filterXSS(privateMsg);
     const getMsgId = filterXSS(msgId);
 
-    // collect chat msges to save it later
+    // collect chat messages to save it later
     chatMessages.push({
         time: time,
         from: getFrom,
@@ -6566,7 +7762,8 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
                 <div class="msg-info-name">${getFrom}</div>
                 <div class="msg-info-time">${time}</div>
             </div>
-            <div id="${chatMessagesId}" class="msg-text">${getMsg}
+            <div id="message-${chatMessagesId}" class="msg-text"></div>
+            <div class="msg-text">
                 <hr/>
     `;
     // add btn direct reply to private message
@@ -6590,7 +7787,7 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
                     id="msg-copy-${chatMessagesId}"
                     class="${className.copy}" 
                     style="color:#fff; border:none; background:transparent;"
-                    onclick="copyToClipboard('${chatMessagesId}')"
+                    onclick="copyToClipboard('message-${chatMessagesId}')"
                 ></button>`;
     if (isSpeechSynthesisSupported) {
         msgHTML += `
@@ -6598,7 +7795,7 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
                     id="msg-speech-${chatMessagesId}"
                     class="${className.speech}" 
                     style="color:#fff; border:none; background:transparent;"
-                    onclick="speechMessage(false, '${getFrom}', '${checkMsg(getMsg)}')"
+                    onclick="speechElementText(false, '${getFrom}', 'message-${chatMessagesId}')"
                 ></button>`;
     }
     msgHTML += ` 
@@ -6606,7 +7803,21 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
         </div>
     </div>
     `;
+
     msgerChat.insertAdjacentHTML('beforeend', msgHTML);
+
+    const message = getId(`message-${chatMessagesId}`);
+    if (message) {
+        if (getFrom === 'ChatGPT') {
+            // Stream the message for ChatGPT
+            streamMessage(message, getMsg, 100);
+        } else {
+            // Process the message for other senders
+            message.innerHTML = processMessage(getMsg);
+            hljs.highlightAll();
+        }
+    }
+
     msgerChat.scrollTop += 500;
     if (!isMobileDevice) {
         setTippy(getId('msg-delete-' + chatMessagesId), 'Delete', 'top');
@@ -6617,6 +7828,104 @@ function appendMessage(from, img, side, msg, privateMsg, msgId = null) {
         }
     }
     chatMessagesId++;
+}
+
+/**
+ * Process Messages
+ * @param {string} message
+ * @returns
+ */
+function processMessage(message) {
+    const codeBlockRegex = /```([a-zA-Z0-9]+)?\n([\s\S]*?)```/g;
+    let parts = [];
+    let lastIndex = 0;
+
+    message.replace(codeBlockRegex, (match, lang, code, offset) => {
+        if (offset > lastIndex) {
+            parts.push({ type: 'text', value: message.slice(lastIndex, offset) });
+        }
+        parts.push({ type: 'code', lang, value: code });
+        lastIndex = offset + match.length;
+    });
+
+    if (lastIndex < message.length) {
+        parts.push({ type: 'text', value: message.slice(lastIndex) });
+    }
+
+    return parts
+        .map((part) => {
+            if (part.type === 'text') {
+                return part.value;
+            } else if (part.type === 'code') {
+                return `<pre><code class="language-${part.lang || ''}">${part.value}</code></pre>`;
+            }
+        })
+        .join('');
+}
+
+/**
+ * Stream message
+ * @param {string} element
+ * @param {string} message
+ * @param {integer} speed
+ */
+function streamMessage(element, message, speed = 100) {
+    const codeBlockRegex = /```([a-zA-Z0-9]+)?\n([\s\S]*?)```/g;
+    const parts = [];
+
+    let lastIndex = 0;
+
+    message.replace(codeBlockRegex, (match, lang, code, offset) => {
+        if (offset > lastIndex) {
+            parts.push({ type: 'text', value: message.slice(lastIndex, offset) });
+        }
+        parts.push({ type: 'code', lang, value: code });
+        lastIndex = offset + match.length;
+    });
+
+    if (lastIndex < message.length) {
+        parts.push({ type: 'text', value: message.slice(lastIndex) });
+    }
+
+    let index = 0;
+    let textBuffer = '';
+    let wordIndex = 0;
+
+    const interval = setInterval(() => {
+        if (index < parts.length) {
+            const part = parts[index];
+
+            if (part.type === 'text') {
+                const words = part.value.split(' ');
+                if (wordIndex < words.length) {
+                    textBuffer += words[wordIndex] + ' ';
+                    wordIndex++;
+                    element.innerHTML = textBuffer;
+                } else {
+                    wordIndex = 0;
+                    index++;
+                }
+            } else if (part.type === 'code') {
+                textBuffer += `<pre><code class="language-${part.lang || ''}">${part.value}</code></pre>`;
+                element.innerHTML = textBuffer;
+                index++;
+            }
+
+            if (index % 5 === 0 || index === parts.length) {
+                highlightCodeBlocks(element);
+            }
+        } else {
+            clearInterval(interval);
+            highlightCodeBlocks(element);
+        }
+    }, speed);
+
+    function highlightCodeBlocks(element) {
+        const codeBlocks = element.querySelectorAll('pre code');
+        codeBlocks.forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    }
 }
 
 /**
@@ -6632,6 +7941,17 @@ function speechMessage(newMsg = true, from, msg) {
     speech.text = (newMsg ? 'New' : '') + ' message from:' + from + '. The message is:' + msg;
     speech.rate = 0.9;
     window.speechSynthesis.speak(speech);
+}
+
+/**
+ * Speech element text
+ * @param {boolean} newMsg true/false
+ * @param {string} from peer_name
+ * @param {string} elemId
+ */
+function speechElementText(newMsg = true, from, elemId) {
+    const element = getId(elemId);
+    speechMessage(newMsg, from, element.innerText);
 }
 
 /**
@@ -7031,15 +8351,18 @@ async function getChatGPTmessage(msg) {
             params: {
                 time: getDataTimeString(),
                 prompt: msg,
+                context: chatGPTcontext,
             },
         })
         .then(
             function (completion) {
                 if (!completion) return;
+                const { message, context } = completion;
+                chatGPTcontext = context ? context : [];
                 setPeerChatAvatarImgName('left', 'ChatGPT');
-                appendMessage('ChatGPT', leftChatAvatar, 'left', completion, true);
+                appendMessage('ChatGPT', leftChatAvatar, 'left', message, true);
                 cleanMessageInput();
-                speechInMessages ? speechMessage(true, 'ChatGPT', completion) : playSound('message');
+                speechInMessages ? speechMessage(true, 'ChatGPT', message) : playSound('message');
             }.bind(this),
         )
         .catch((err) => {
@@ -7231,7 +8554,7 @@ function handleHideMe(isHideMeActive) {
     } else {
         elemDisplay(myVideoWrap, true, 'inline-block');
         hideMeBtn.className = className.hideMeOff;
-        setColor(hideMeBtn, 'black');
+        setColor(hideMeBtn, 'var(--btn-bar-bg-color)');
         playSound('on');
     }
     resizeVideoMedia();
@@ -7246,13 +8569,13 @@ function setMyHandStatus() {
         // Raise hand
         setColor(myHandBtn, 'green');
         elemDisplay(myHandStatusIcon, true);
-        setTippy(myHandBtn, 'Raise your hand', placement);
+        setTippy(myHandBtn, 'Raise your hand', bottomButtonsPlacement);
         playSound('raiseHand');
     } else {
         // Lower hand
-        setColor(myHandBtn, 'black');
+        setColor(myHandBtn, 'var(--btn-bar-bg-color)');
         elemDisplay(myHandStatusIcon, false);
-        setTippy(myHandBtn, 'Lower your hand', placement);
+        setTippy(myHandBtn, 'Lower your hand', bottomButtonsPlacement);
     }
     emitPeerStatus('hand', myHandStatus);
 }
@@ -7269,7 +8592,7 @@ function setMyAudioStatus(status) {
     // send my audio status to all peers in the room
     emitPeerStatus('audio', status);
     setTippy(myAudioStatusIcon, status ? 'My audio is on' : 'My audio is off', 'bottom');
-    setTippy(audioBtn, status ? 'Stop the audio' : 'Start the audio', placement);
+    setTippy(audioBtn, status ? 'Stop the audio' : 'Start the audio', bottomButtonsPlacement);
     status ? playSound('on') : playSound('off');
 }
 
@@ -7293,7 +8616,7 @@ function setMyVideoStatus(status) {
 
     if (!isMobileDevice) {
         if (myVideoStatusIcon) setTippy(myVideoStatusIcon, status ? 'My video is on' : 'My video is off', 'bottom');
-        setTippy(videoBtn, status ? 'Stop the video' : 'Start the video', placement);
+        setTippy(videoBtn, status ? 'Stop the video' : 'Start the video', bottomButtonsPlacement);
     }
 
     if (status) {
@@ -7328,6 +8651,8 @@ function handlePeerStatus(config) {
         case 'privacy':
             setVideoPrivacyStatus(peer_id + '___video', status);
             break;
+        default:
+            break;
     }
 }
 
@@ -7349,16 +8674,20 @@ function setPeerHandStatus(peer_id, peer_name, status) {
 }
 
 /**
- * Set Participant Audio Status Icon and Title
+ * Set Participant Audio Status and toggle Audio Volume
  * @param {string} peer_id socket.id
  * @param {boolean} status of peer audio
  */
 function setPeerAudioStatus(peer_id, status) {
     const peerAudioStatus = getId(peer_id + '_audioStatus');
+    const peerAudioVolume = getId(peer_id + '_audioVolume');
     if (peerAudioStatus) {
         peerAudioStatus.className = status ? className.audioOn : className.audioOff;
         setTippy(peerAudioStatus, status ? 'Participant audio is on' : 'Participant audio is off', 'bottom');
         status ? playSound('on') : playSound('off');
+    }
+    if (peerAudioVolume) {
+        elemDisplay(peerAudioVolume, status);
     }
 }
 
@@ -7581,6 +8910,8 @@ function handlePeerAction(config) {
         case 'ejectAll':
             handleKickedOut(config);
             break;
+        default:
+            break;
     }
 }
 
@@ -7611,10 +8942,11 @@ function handleEmoji(message, duration = 5000) {
         const emojiDisplay = document.createElement('div');
         emojiDisplay.className = 'animate__animated animate__backInUp';
         emojiDisplay.style.padding = '10px';
-        emojiDisplay.style.fontSize = '3vh';
+        emojiDisplay.style.fontSize = '2vh';
         emojiDisplay.style.color = '#FFF';
         emojiDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
         emojiDisplay.style.borderRadius = '10px';
+        emojiDisplay.style.marginBottom = '5px';
         emojiDisplay.innerText = `${message.emoji} ${message.peer_name}`;
         userEmoji.appendChild(emojiDisplay);
         setTimeout(() => {
@@ -7750,6 +9082,8 @@ function disableAllPeers(element) {
                     userLog('toast', 'Hide everyone 👍');
                     emitPeersAction('hideVideo');
                     break;
+                default:
+                    break;
             }
         }
     });
@@ -7814,6 +9148,8 @@ function disablePeer(peer_id, element) {
                     userLog('toast', 'Hide video 👍');
                     emitPeerAction(peer_id, 'hideVideo');
                     break;
+                default:
+                    break;
             }
         }
     });
@@ -7867,6 +9203,8 @@ function handleRoomAction(config, emit = false) {
                 sendToServer('roomAction', thisConfig);
                 handleRoomStatus(thisConfig);
                 break;
+            default:
+                break;
         }
     } else {
         // data coming from signaling server
@@ -7898,6 +9236,8 @@ function handleRoomStatus(config) {
         case 'checkPassword':
             isRoomLocked = true;
             password == 'OK' ? joinToChannel() : handleRoomLocked();
+            break;
+        default:
             break;
     }
 }
@@ -7964,6 +9304,29 @@ function handleUnlockTheRoom() {
  */
 function handleWhiteboardToggle() {
     thereArePeerConnections() ? whiteboardAction(getWhiteboardAction('toggle')) : toggleWhiteboard();
+}
+
+/**
+ * Toggle Lock/Unlock whiteboard
+ */
+function toggleLockUnlockWhiteboard() {
+    wbIsLock = !wbIsLock;
+
+    const btnToShow = wbIsLock ? whiteboardUnlockBtn : whiteboardLockBtn;
+    const btnToHide = wbIsLock ? whiteboardLockBtn : whiteboardUnlockBtn;
+    const btnColor = wbIsLock ? 'red' : 'white';
+    const action = wbIsLock ? 'lock' : 'unlock';
+
+    elemDisplay(btnToShow, true, 'flex');
+    elemDisplay(btnToHide, false);
+    setColor(whiteboardUnlockBtn, btnColor);
+
+    whiteboardAction(getWhiteboardAction(action));
+
+    if (wbIsLock) {
+        userLog('toast', 'The whiteboard is locked. \n The participants cannot interact with it.');
+        playSound('locked');
+    }
 }
 
 /**
@@ -8118,81 +9481,16 @@ function whiteboardAddObj(type) {
             });
             break;
         case 'imgFile':
-            Swal.fire({
-                allowOutsideClick: false,
-                background: swBg,
-                position: 'center',
-                title: 'Select image',
-                input: 'file',
-                inputAttributes: {
-                    accept: wbImageInput,
-                    'aria-label': 'Select image',
-                },
-                showDenyButton: true,
-                confirmButtonText: `OK`,
-                denyButtonText: `Cancel`,
-                showClass: { popup: 'animate__animated animate__fadeInDown' },
-                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let wbCanvasImg = result.value;
-                    if (wbCanvasImg && wbCanvasImg.size > 0) {
-                        let reader = new FileReader();
-                        reader.onload = function (event) {
-                            let imgObj = new Image();
-                            imgObj.src = event.target.result;
-                            imgObj.onload = function () {
-                                let image = new fabric.Image(imgObj);
-                                image.set({ top: 0, left: 0 }).scale(0.3);
-                                addWbCanvasObj(image);
-                            };
-                        };
-                        reader.readAsDataURL(wbCanvasImg);
-                    } else {
-                        userLog('error', 'File not selected or empty');
-                    }
-                }
-            });
+            setupFileSelection('Select the image', wbImageInput, renderImageToCanvas);
             break;
         case 'pdfFile':
-            Swal.fire({
-                allowOutsideClick: false,
-                background: swBg,
-                position: 'center',
-                title: 'Select the PDF',
-                input: 'file',
-                inputAttributes: {
-                    accept: wbPdfInput,
-                    'aria-label': 'Select the PDF',
-                },
-                showDenyButton: true,
-                confirmButtonText: `OK`,
-                denyButtonText: `Cancel`,
-                showClass: { popup: 'animate__animated animate__fadeInDown' },
-                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let wbCanvasPdf = result.value;
-                    if (wbCanvasPdf && wbCanvasPdf.size > 0) {
-                        let reader = new FileReader();
-                        reader.onload = async function (event) {
-                            wbCanvas.requestRenderAll();
-                            await pdfToImage(event.target.result, wbCanvas);
-                            whiteboardIsDrawingMode(false);
-                            wbCanvasToJson();
-                        };
-                        reader.readAsDataURL(wbCanvasPdf);
-                    } else {
-                        userLog('error', 'File not selected or empty', 'top-end');
-                    }
-                }
-            });
+            setupFileSelection('Select the PDF', wbPdfInput, renderPdfToCanvas);
             break;
         case 'text':
             const text = new fabric.IText('Lorem Ipsum', {
                 top: 0,
                 left: 0,
-                fontFamily: 'Comfortaa',
+                fontFamily: 'Montserrat',
                 fill: wbCanvas.freeDrawingBrush.color,
                 strokeWidth: wbCanvas.freeDrawingBrush.width,
                 stroke: wbCanvas.freeDrawingBrush.color,
@@ -8244,6 +9542,120 @@ function whiteboardAddObj(type) {
             break;
         default:
             break;
+    }
+}
+
+/**
+ * Setup Canvas file selections
+ * @param {string} title
+ * @param {string} accept
+ * @param {object} renderToCanvas
+ */
+function setupFileSelection(title, accept, renderToCanvas) {
+    Swal.fire({
+        allowOutsideClick: false,
+        background: swBg,
+        position: 'center',
+        title: title,
+        input: 'file',
+        html: `
+        <div id="dropArea">
+            <p>Drag and drop your file here</p>
+        </div>
+        `,
+        inputAttributes: {
+            accept: accept,
+            'aria-label': title,
+        },
+        didOpen: () => {
+            const dropArea = document.getElementById('dropArea');
+            dropArea.addEventListener('dragenter', handleDragEnter);
+            dropArea.addEventListener('dragover', handleDragOver);
+            dropArea.addEventListener('dragleave', handleDragLeave);
+            dropArea.addEventListener('drop', handleDrop);
+        },
+        showDenyButton: true,
+        confirmButtonText: `OK`,
+        denyButtonText: `Cancel`,
+        showClass: { popup: 'animate__animated animate__fadeInDown' },
+        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            renderToCanvas(result.value);
+        }
+    });
+
+    function handleDragEnter(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.style.background = 'var(--body-bg)';
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.style.background = '';
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+        e.target.style.background = '';
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            console.log('Selected file:', file);
+            Swal.close();
+            renderToCanvas(file);
+        }
+    }
+}
+
+/**
+ * Render Image file to Canvas
+ * @param {object} wbCanvasImg
+ */
+function renderImageToCanvas(wbCanvasImg) {
+    if (wbCanvasImg && wbCanvasImg.size > 0) {
+        let reader = new FileReader();
+        reader.onload = function (event) {
+            let imgObj = new Image();
+            imgObj.src = event.target.result;
+            imgObj.onload = function () {
+                let image = new fabric.Image(imgObj);
+                image.set({ top: 0, left: 0 }).scale(0.3);
+                addWbCanvasObj(image);
+            };
+        };
+        reader.readAsDataURL(wbCanvasImg);
+    }
+}
+
+/**
+ * Render PDF file to Canvas
+ * @param {object} wbCanvasPdf
+ */
+async function renderPdfToCanvas(wbCanvasPdf) {
+    if (wbCanvasPdf && wbCanvasPdf.size > 0) {
+        let reader = new FileReader();
+        reader.onload = async function (event) {
+            wbCanvas.requestRenderAll();
+            await pdfToImage(event.target.result, wbCanvas);
+            whiteboardIsDrawingMode(false);
+            wbCanvasToJson();
+        };
+        reader.readAsDataURL(wbCanvasPdf);
     }
 }
 
@@ -8596,6 +10008,8 @@ function handleWhiteboardAction(config, logMe = true) {
             }
             break;
         //...
+        default:
+            break;
     }
 }
 
@@ -8752,6 +10166,26 @@ function abortFileTransfer() {
 }
 
 /**
+ * Abort file transfer
+ */
+function abortReceiveFileTransfer() {
+    sendToServer('fileReceiveAbort', {
+        room_id: roomId,
+        peer_name: myPeerName,
+    });
+}
+
+/**
+ * Handle abort file transfer
+ * @param object config - peer info that abort the file transfer
+ */
+function handleAbortFileTransfer(config) {
+    console.log(`File transfer aborted by ${config.peer_name}`);
+    userLog('toast', `⚠️ File transfer aborted by ${config.peer_name}`);
+    abortFileTransfer();
+}
+
+/**
  * File Transfer aborted by peer
  */
 function handleFileAbort() {
@@ -8772,7 +10206,7 @@ function hideFileTransfer() {
 }
 
 /**
- * Select the File to Share
+ * Select or Drag and Drop the File to Share
  * @param {string} peer_id
  * @param {boolean} broadcast send to all (default false)
  */
@@ -8787,9 +10221,21 @@ function selectFileToShare(peer_id, broadcast = false) {
         position: 'center',
         title: 'Share file',
         input: 'file',
+        html: `
+        <div id="dropArea">
+            <p>Drag and drop your file here</p>
+        </div>
+        `,
         inputAttributes: {
             accept: fileSharingInput,
             'aria-label': 'Select file',
+        },
+        didOpen: () => {
+            const dropArea = getId('dropArea');
+            dropArea.addEventListener('dragenter', handleDragEnter);
+            dropArea.addEventListener('dragover', handleDragOver);
+            dropArea.addEventListener('dragleave', handleDragLeave);
+            dropArea.addEventListener('drop', handleDrop);
         },
         showDenyButton: true,
         confirmButtonText: `Send`,
@@ -8801,6 +10247,42 @@ function selectFileToShare(peer_id, broadcast = false) {
             sendFileInformations(result.value, peer_id, broadcast);
         }
     });
+
+    function handleDragEnter(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.style.background = 'var(--body-bg)';
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.style.background = '';
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+        e.target.style.background = '';
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            console.log('Selected file:', file);
+            Swal.close();
+            sendFileInformations(file, peer_id, broadcast);
+        }
+    }
 }
 
 /**
@@ -9036,6 +10518,24 @@ function sendVideoUrl(peer_id = null) {
             emitVideoPlayer('open', config);
         }
     });
+
+    // Take URL from clipboard ex:
+    // https://www.youtube.com/watch?v=1ZYbU82GVz4
+
+    navigator.clipboard
+        .readText()
+        .then((clipboardText) => {
+            if (!clipboardText) return false;
+            const sanitizedText = filterXSS(clipboardText);
+            const inputElement = Swal.getInput();
+            if (isVideoTypeSupported(sanitizedText) && inputElement) {
+                inputElement.value = sanitizedText;
+            }
+            return false;
+        })
+        .catch(() => {
+            return false;
+        });
 }
 
 /**
@@ -9163,6 +10663,8 @@ function handleVideoPlayer(config) {
             userLog('toast', `${icons.user} ${peer_name} \n close video player`);
             closeVideoUrlPlayer();
             break;
+        default:
+            break;
     }
 }
 
@@ -9209,6 +10711,57 @@ function kickOut(peer_id) {
             });
         }
     });
+}
+
+/**
+ * Start caption if not already started
+ * @param {object} config data
+ */
+function handleCaptionActions(config) {
+    const { peer_name, action } = config;
+
+    switch (action) {
+        case 'start':
+            if (!speechRecognition) {
+                userLog(
+                    'info',
+                    `${peer_name} wants to start captions for this session, but your browser does not support it. Please use a Chromium-based browser like Google Chrome, Microsoft Edge, or Brave.`,
+                );
+                return;
+            }
+
+            if (recognitionRunning || !buttons.main.showCaptionRoomBtn) return;
+
+            Swal.fire({
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showDenyButton: true,
+                background: swBg,
+                imageUrl: images.caption,
+                title: 'Start Captions',
+                text: `${peer_name} wants to start the captions for this session. Would you like to enable them?`,
+                confirmButtonText: `Yes`,
+                denyButtonText: `No`,
+                showClass: { popup: 'animate__animated animate__fadeInDown' },
+                hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (!isCaptionBoxVisible) {
+                        captionBtn.click();
+                    }
+                    if (!recognitionRunning) {
+                        const { recognitionLanguageIndex, recognitionDialectIndex } = config.data;
+                        recognitionLanguage.selectedIndex = recognitionLanguageIndex;
+                        updateCountry();
+                        recognitionDialect.selectedIndex = recognitionDialectIndex;
+                        speechRecognitionStart.click();
+                    }
+                }
+            });
+            break;
+        default:
+            break;
+    }
 }
 
 /**
@@ -9267,7 +10820,7 @@ function showAbout() {
     Swal.fire({
         background: swBg,
         position: 'center',
-        title: '<strong>WebRTC P2P</strong>',
+        title: '<strong>WebRTC P2P v1.4.22</strong>',
         imageAlt: 'mirotalk-about',
         imageUrl: images.about,
         customClass: { image: 'img-about' },
@@ -9277,11 +10830,10 @@ function showAbout() {
             <button 
                 id="support-button" 
                 data-umami-event="Support button" 
-                class="pulsate" 
                 onclick="window.open('https://codecanyon.net/user/miroslavpejic85')">
                 <i class="${className.heart}" ></i>&nbsp;Support
             </button>
-            <br /><br />
+            <br /><br /><br />
             Author:<a 
                 id="linkedin-button" 
                 data-umami-event="Linkedin button" 
@@ -9295,6 +10847,10 @@ function showAbout() {
                 href="mailto:miroslav.pejic.85@gmail.com?subject=MiroTalk P2P info"> 
                 miroslav.pejic.85@gmail.com
             </a>
+            <br /><br />
+            <hr />
+            <span>&copy; 2024 MiroTalk P2P, all rights reserved</span>
+            <hr />
         </div>
         `,
         showClass: { popup: 'animate__animated animate__fadeInDown' },
@@ -9393,6 +10949,21 @@ function dragElement(elmnt, dragObj) {
 }
 
 /**
+ * Make Obj Undraggable
+ * @param {object} elmnt father element
+ * @param {object} dragObj children element to make father undraggable
+ */
+function undragElement(elmnt, dragObj) {
+    if (dragObj) {
+        dragObj.onmousedown = null;
+    } else {
+        elmnt.onmousedown = null;
+    }
+    elmnt.style.top = '';
+    elmnt.style.left = '';
+}
+
+/**
  * Date Format: https://convertio.co/it/
  * @returns {string} date string format: DD-MM-YYYY-H_M_S
  */
@@ -9420,16 +10991,28 @@ function bytesToSize(bytes) {
  * @param {object} data peer audio
  */
 function handlePeerVolume(data) {
-    if (!isAudioPitchBar) return;
-    const peer_id = data.peer_id;
+    const { peer_id, volume } = data;
+
+    let audioColorTmp = '#19bb5c';
+    if ([50, 60, 70].includes(volume)) audioColorTmp = '#FFA500'; // Orange
+    if ([80, 90, 100].includes(volume)) audioColorTmp = '#FF0000'; // Red
+
+    if (!isAudioPitchBar) {
+        const remotePeerAvatarImg = getId(peer_id + '_avatar');
+        if (remotePeerAvatarImg) {
+            applyBoxShadowEffect(remotePeerAvatarImg, audioColorTmp, 100);
+        }
+        const remotePeerVideo = getId(peer_id + '___video');
+        if (remotePeerVideo && remotePeerVideo.classList.contains('videoCircle')) {
+            applyBoxShadowEffect(remotePeerVideo, audioColorTmp, 100);
+        }
+        return;
+    }
+
     const remotePitchBar = getId(peer_id + '_pitch_bar');
     //let remoteVideoWrap = getId(peer_id + '_videoWrap');
     if (!remotePitchBar) return;
-
-    const volume = data.volume;
-    if (volume > 50) {
-        remotePitchBar.style.backgroundColor = 'orange';
-    }
+    remotePitchBar.style.backgroundColor = audioColorTmp;
     remotePitchBar.style.height = volume + '%';
     //remoteVideoWrap.classList.toggle('speaking');
     setTimeout(function () {
@@ -9444,12 +11027,23 @@ function handlePeerVolume(data) {
  * @param {object} data my audio
  */
 function handleMyVolume(data) {
-    if (!isAudioPitchBar || !myPitchBar) return;
+    const { volume } = data;
 
-    const volume = data.volume;
-    if (volume > 50) {
-        myPitchBar.style.backgroundColor = 'orange';
+    let audioColorTmp = '#19bb5c';
+    if ([50, 60, 70].includes(volume)) audioColorTmp = '#FFA500'; // Orange
+    if ([80, 90, 100].includes(volume)) audioColorTmp = '#FF0000'; // Red
+
+    if (!isAudioPitchBar || !myPitchBar) {
+        const localPeerAvatarImg = getId('myVideoAvatarImage');
+        if (localPeerAvatarImg) {
+            applyBoxShadowEffect(localPeerAvatarImg, audioColorTmp, 100);
+        }
+        if (myVideo && myVideo.classList.contains('videoCircle')) {
+            applyBoxShadowEffect(myVideo, audioColorTmp, 100);
+        }
+        return;
     }
+    myPitchBar.style.backgroundColor = audioColorTmp;
     myPitchBar.style.height = volume + '%';
     //myVideoWrap.classList.toggle('speaking');
     setTimeout(function () {
@@ -9457,6 +11051,21 @@ function handleMyVolume(data) {
         myPitchBar.style.height = '0%';
         //myVideoWrap.classList.toggle('speaking');
     }, 100);
+}
+
+/**
+ * Apply Box Shadow effect to element
+ * @param {object} element
+ * @param {string} color
+ * @param {integer} delay ms
+ */
+function applyBoxShadowEffect(element, color, delay = 200) {
+    if (element) {
+        element.style.boxShadow = `0 0 20px ${color}`;
+        setTimeout(() => {
+            element.style.boxShadow = 'none';
+        }, delay);
+    }
 }
 
 /**
@@ -9475,7 +11084,7 @@ function userLog(type, message, timer = 3000) {
                 icon: type,
                 title: type,
                 text: message,
-                showClass: { popup: 'animate__animated animate__rubberBand' },
+                showClass: { popup: 'animate__animated animate__fadeInDown' },
                 hideClass: { popup: 'animate__animated animate__fadeOutUp' },
             });
             playSound('alert');
@@ -9514,7 +11123,7 @@ function userLog(type, message, timer = 3000) {
             });
             Toast.fire({
                 icon: 'info',
-                title: message,
+                html: message,
                 showClass: { popup: 'animate__animated animate__fadeInDown' },
                 hideClass: { popup: 'animate__animated animate__fadeOutUp' },
             });
@@ -9522,7 +11131,34 @@ function userLog(type, message, timer = 3000) {
         // ......
         default:
             alert(message);
+            break;
     }
+}
+
+/**
+ * Popup Toast message
+ * @param {string} icon info, success, alert, warning
+ * @param {string} title message title
+ * @param {string} html message in html format
+ * @param {string} position message position
+ * @param {integer} duration time popup in ms
+ */
+function toastMessage(icon, title, html, position = 'top-end', duration = 3000) {
+    const Toast = Swal.mixin({
+        background: swBg,
+        position: position,
+        icon: icon,
+        showConfirmButton: false,
+        timerProgressBar: true,
+        toast: true,
+        timer: duration,
+    });
+    Toast.fire({
+        title: title,
+        html: html,
+        showClass: { popup: 'animate__animated animate__fadeInDown' },
+        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+    });
 }
 
 /**
@@ -9532,8 +11168,9 @@ function userLog(type, message, timer = 3000) {
  * @param {string} title message title
  * @param {string} html message in html format
  * @param {string} position message position
+ * @param {string} redirectURL if set on press ok will be redirected to the URL
  */
-function msgHTML(icon, imageUrl, title, html, position = 'center') {
+function msgHTML(icon, imageUrl, title, html, position = 'center', redirectURL = false) {
     Swal.fire({
         allowOutsideClick: false,
         allowEscapeKey: false,
@@ -9545,6 +11182,10 @@ function msgHTML(icon, imageUrl, title, html, position = 'center') {
         html: html,
         showClass: { popup: 'animate__animated animate__fadeInDown' },
         hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+    }).then((result) => {
+        if (result.isConfirmed && redirectURL) {
+            openURL(redirectURL);
+        }
     });
 }
 
@@ -9740,4 +11381,13 @@ function sanitizeXSS(src) {
  */
 function disable(elem, disabled) {
     elem.disabled = disabled;
+}
+
+/**
+ * Sleep in ms
+ * @param {integer} ms milleseconds
+ * @returns Promise
+ */
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

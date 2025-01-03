@@ -41,6 +41,7 @@
     display: inline-block;
     background: var(--body-bg);
     border: var(--elem-border-color);
+    box-shadow: var(--box-shadow);
     border-radius: 10px;
     animation: show 0.4s ease;
 }
@@ -69,9 +70,36 @@
     color: #fff;
 }
 
+.navbar div {
+    display: inline;
+}
+
 .navbar button:hover {
     color: var(--hover-color);
     cursor: pointer;
+}
+
+/*--------------------------------------------------------------
+# Expand buttons 
+--------------------------------------------------------------*/
+
+.expand-video-content {
+    position: relative;
+    display: none;
+    float: right;
+    width: auto;
+}
+
+.expand-video-content button {
+    display: none;
+}
+
+.expand-video:hover .expand-video-content {
+    display: inline;
+}
+
+.expand-video:hover .expand-video-content button {
+    display: inline;
 }
 
 /*--------------------------------------------------------------
@@ -81,17 +109,16 @@
 .videoPeerName {
     z-index: 8;
     position: absolute;
-    right: 0;
+    padding: 10px;
+    margin: 10px;
     bottom: 0;
+    right: 0;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
     display: flex;
     align-items: center;
-    margin: 5px;
-    width: auto;
-    height: 25px;
     border-radius: 5px;
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--body-bg);
 }
 
 /*--------------------------------------------------------------
@@ -109,6 +136,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    transition: box-shadow 0.2s ease;
 }
 
 /*--------------------------------------------------------------
@@ -126,6 +154,7 @@
     right: 0;
     bottom: 0;
     margin: auto;
+    transition: box-shadow 0.2s ease;
 }
 
 .videoDefault {
@@ -133,6 +162,7 @@
     width: 100%;
     height: 100%;
     border-radius: 10px;
+    transition: box-shadow 0.2s ease;
 }
 
 video {
@@ -146,12 +176,11 @@ video {
 }
 
 video:hover {
-    opacity: 0.9;
+    filter: contrast(105%);
 }
 
 video:fullscreen {
     object-fit: contain;
-    opacity: 1;
 }
 
 #myVideo.mirror {

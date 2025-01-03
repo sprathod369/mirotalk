@@ -3,9 +3,9 @@
     <head>
         <!-- Title and Icon -->
 
-        <title>MiroTalk a Free Secure Video Calls, Chat & Screen Sharing.</title>
-        <link rel="shortcut icon" href="../images/logo.svg" />
-        <link rel="apple-touch-icon" href="../images/logo.svg" />
+        <title id="landingTitle">MiroTalk a Free Secure Video Calls, Chat & Screen Sharing.</title>
+        <link id="shortcutIcon" rel="shortcut icon" href="../images/logo.svg" />
+        <link id="appleTouchIcon" rel="apple-touch-icon" href="../images/logo.svg" />
 
         <!-- Meta Information -->
 
@@ -36,7 +36,7 @@
 
         <!-- xss -->
 
-        <script src="https://rawgit.com/leizongmin/js-xss/master/dist/xss.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xss/dist/xss.min.js"></script>
 
         <!-- https://cdnjs.com/libraries/font-awesome -->
 
@@ -47,11 +47,17 @@
         <link rel="stylesheet" href="../css/landing.css" />
         <link rel="stylesheet" href="../css/newcall.css" />
 
+        <!-- Snow effects -->
+
+        <link rel="stylesheet" href="../css/snow.css" />
+        <script defer src="../js/snow.js"></script>
+
         <!-- JavaScripts -->
 
         <script async src="../js/umami.js"></script>
     </head>
     <body class="has-animations">
+        <div id="snow-container"></div>
         <div class="body-wrap">
             <header class="site-header reveal-from-top">
                 <div class="container">
@@ -59,14 +65,14 @@
                         <div class="brand">
                             <div class="m-0">
                                 <a href="/">
-                                    <!-- <img src="../images/logo.svg" alt="MiroTalk P2P" width="32" height="32" /> -->
-                                    <img
+                                    <img src="../images/logo.svg" alt="MiroTalk P2P" width="32" height="32" />
+                                    <!-- <img
                                         src="../images/mirotalk-mc.png"
                                         alt="MiroTalk P2P"
                                         width="96"
                                         height="auto"
                                         style="margin-top: 80px"
-                                    />
+                                    /> -->
                                 </a>
                             </div>
                         </div>
@@ -80,11 +86,19 @@
                             <div class="split-wrap invert-mobile">
                                 <div class="split-item">
                                     <div class="hero-content split-item-content center-content-mobile">
-                                        <h1 class="mt-32 mb-16 reveal-from-bottom" data-reveal-delay="150">
+                                        <h1
+                                            id="appTitle"
+                                            class="mt-32 mb-16 reveal-from-bottom"
+                                            data-reveal-delay="150"
+                                        >
                                             MiroTalk<br />Free browser based Real-time video calls.<br />
                                             Simple, Secure, Fast.
                                         </h1>
-                                        <p class="mt-0 mb-32 reveal-from-bottom" data-reveal-delay="300">
+                                        <p
+                                            id="appDescription"
+                                            class="mt-0 mb-32 reveal-from-bottom"
+                                            data-reveal-delay="300"
+                                        >
                                             Start your next video call with a single click. No download, plug-in, or
                                             login is required. Just get straight to talking, messaging, and sharing your
                                             screen.
@@ -103,7 +117,7 @@
                     </div>
                 </section>
 
-                <section class="cta section center-content-mobile reveal-from-bottom">
+                <section class="cta section center-content-mobile reveal-from-bottom mb-32">
                     <div class="container">
                         <div class="cta-inner section-inner cta-split br-12">
                             <div class="cta-slogan">
@@ -114,7 +128,7 @@
                             </div>
                             <div class="cta-action">
                                 <div class="mb-0">
-                                    <label class="form-label screen-reader" for="roomName">mirotalk</label>
+                                    <label class="form-label screen-reader" for="roomName">MiroTalk-P2P</label>
                                     <div class="form-group-desktop">
                                         <input
                                             id="roomName"
@@ -122,72 +136,26 @@
                                             type="text"
                                             value="mirotalk"
                                             maxlength="32"
-                                            style="border-radius: 6px"
                                         />
                                         <button
                                             id="genRoomButton"
                                             class="button button-primary br-6 mr-8 mb-8 fas fa-arrows-rotate"
-                                            onclick="genRoom()"
                                         ></button>
-                                        <button
-                                            id="joinRoomButton"
-                                            class="button button-primary br-6 pulse"
-                                            onclick="joinRoom()"
-                                        >
+                                        <button id="joinRoomButton" class="button button-primary br-6 pulse">
                                             Join Room
                                         </button>
-                                        <script>
-                                            document.getElementById('roomName').onkeyup = (e) => {
-                                                if (e.keyCode === 13) {
-                                                    e.preventDefault();
-                                                    joinRoom();
-                                                }
-                                            };
-                                            function genRoom() {
-                                                document.getElementById('roomName').value = getUUID4();
-                                            }
-                                            function getUUID4() {
-                                                return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
-                                                    (
-                                                        c ^
-                                                        (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
-                                                    ).toString(16),
-                                                );
-                                            }
-                                            function joinRoom() {
-                                                const roomName = filterXSS(document.getElementById('roomName').value);
-                                                if (roomName) {
-                                                    window.location.href = '/join/' + roomName;
-                                                    window.localStorage.lastRoom = roomName;
-                                                } else {
-                                                    alert('Room name empty!\nPlease pick a room name.');
-                                                }
-                                            }
-                                        </script>
                                     </div>
                                 </div>
                                 <div id="lastRoomContainer" class="last-room">
                                     <span>Your recent room:</span>
                                     <a id="lastRoom"></a>
                                 </div>
-                                <script>
-                                    const lastRoomContainer = document.getElementById('lastRoomContainer');
-                                    const lastRoom = document.getElementById('lastRoom');
-                                    const lastRoomName = window.localStorage.lastRoom
-                                        ? window.localStorage.lastRoom
-                                        : '';
-                                    if (lastRoomName) {
-                                        lastRoomContainer.style.display = 'inline-flex';
-                                        lastRoom.setAttribute('href', '/join/' + lastRoomName);
-                                        lastRoom.innerText = lastRoomName;
-                                    }
-                                </script>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="features-tiles section center-content mt-32">
+                <section id="features" class="features-tiles section center-content mt-32">
                     <div class="container">
                         <div class="features-tiles-inner section-inner has-top-divider">
                             <div class="section-header">
@@ -210,7 +178,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/screen_sharing.svg"
+                                                    src="../svg/screenSharing.svg"
                                                     alt="Screen Sharing"
                                                 />
                                             </div>
@@ -219,7 +187,7 @@
                                             <h4 class="mt-0 mb-8">Screen Sharing</h4>
                                             <p class="m-0 text-sm">
                                                 Share your screen, application window, present your documents, slides
-                                                and more. Up to 4k resolution and speed up to 60fps.
+                                                and more. Up to 8k resolution and speed up to 60fps.
                                             </p>
                                         </div>
                                     </div>
@@ -231,7 +199,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/webcam_streaming.svg"
+                                                    src="../svg/webcamStreaming.svg"
                                                     alt="WebCam Streaming"
                                                 />
                                             </div>
@@ -240,7 +208,7 @@
                                             <h4 class="mt-0 mb-8">WebCam Streaming</h4>
                                             <p class="m-0 text-sm">
                                                 Having the webcam on, allows participants to make a deeper connection
-                                                with you. Up to 4k resolution and speed up to 60fps.
+                                                with you. Up to 8k resolution and speed up to 60fps.
                                             </p>
                                         </div>
                                     </div>
@@ -250,7 +218,7 @@
                                     <div class="tiles-item-inner">
                                         <div class="features-tiles-item-header">
                                             <div class="features-tiles-item-image mb-16">
-                                                <img class="wh-200-150" src="../svg/webcam_chat.svg" alt="Chat Room" />
+                                                <img class="wh-200-150" src="../svg/webcamChat.svg" alt="Chat Room" />
                                             </div>
                                         </div>
                                         <div class="features-tiles-item-content">
@@ -269,7 +237,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/recording_meeting.svg"
+                                                    src="../svg/recordingMeeting.svg"
                                                     alt="Meeting Recording"
                                                 />
                                             </div>
@@ -290,7 +258,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/interactive_whitboard.svg"
+                                                    src="../svg/interactiveWhitboard.svg"
                                                     alt="Interactive Whiteboard"
                                                 />
                                             </div>
@@ -311,7 +279,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/file_sharing.svg"
+                                                    src="../svg/fileSharing.svg"
                                                     alt="File Sharing"
                                                 />
                                             </div>
@@ -326,13 +294,47 @@
                                     </div>
                                 </div>
 
+                                <div class="tiles-item reveal-from-left">
+                                    <div class="tiles-item-inner">
+                                        <div class="features-tiles-item-header">
+                                            <div class="features-tiles-item-image mb-16">
+                                                <img class="wh-200-150" src="../svg/chatgpt.svg" alt="ChatGPT" />
+                                            </div>
+                                        </div>
+                                        <div class="features-tiles-item-content">
+                                            <h4 class="mt-0 mb-8">ChatGPT</h4>
+                                            <p class="m-0 text-sm">
+                                                ChatGPT for answering questions, providing information, and connecting
+                                                users to relevant resources.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="tiles-item reveal-from-left">
+                                    <div class="tiles-item-inner">
+                                        <div class="features-tiles-item-header">
+                                            <div class="features-tiles-item-image mb-16">
+                                                <img class="wh-200-150" src="../svg/api.svg" alt="Rest API" />
+                                            </div>
+                                        </div>
+                                        <div class="features-tiles-item-content">
+                                            <h4 class="mt-0 mb-8">Rest API</h4>
+                                            <p class="m-0 text-sm">
+                                                Seamlessly integrate and power your applications with ease. Quick setup
+                                                and top-tier support.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="tiles-item reveal-from-right">
                                     <div class="tiles-item-inner">
                                         <div class="features-tiles-item-header">
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/total_privacy.svg"
+                                                    src="../svg/totalPrivacy.svg"
                                                     alt="Total Privacy"
                                                 />
                                             </div>
@@ -353,7 +355,7 @@
                                             <div class="features-tiles-item-image mb-16">
                                                 <img
                                                     class="wh-200-150"
-                                                    src="../svg/maximum_security.svg"
+                                                    src="../svg/maximumSecurity.svg"
                                                     alt="Maximum Security"
                                                 />
                                             </div>
@@ -372,7 +374,7 @@
                     </div>
                 </section>
 
-                <section class="team section center-content">
+                <section id="browsers" class="team section center-content">
                     <div class="container">
                         <div class="team-inner section-inner has-top-divider">
                             <div class="section-header center-content reveal-from-bottom">
@@ -405,7 +407,7 @@
                     </div>
                 </section>
 
-                <section class="team section center-content">
+                <section id="teams" class="team section center-content">
                     <div class="container">
                         <div class="team-inner section-inner has-top-divider">
                             <div class="section-header center-content reveal-from-bottom">
@@ -447,7 +449,7 @@
                     </div>
                 </section>
 
-                <section class="section">
+                <section id="tryEasier" class="section">
                     <div class="container">
                         <div class="section-inner has-top-divider">
                             <div class="container-xs">
@@ -455,13 +457,7 @@
                                     <h2 class="m-0">Try an easier, more secure way of calling.</h2>
                                 </div>
                                 <div class="center-content">
-                                    <a
-                                        class="button button-primary button-wide-mobile br-6 pulse"
-                                        style="
-                                            border: 0;
-                                            background: linear-gradient(100deg, #376df9 0, #ff5fa0 75%, #ffc55a 100%);
-                                        "
-                                        href="/newcall"
+                                    <a class="button button-custom button-wide-mobile br-6 pulse" href="/newcall"
                                         >Try now</a
                                     >
                                 </div>
@@ -470,9 +466,9 @@
                     </div>
                 </section>
 
-                <section class="clients section">
+                <section id="poweredBy" class="clients section">
                     <div class="container">
-                        <p class="mt-24" style="text-align: center">Powered by</p>
+                        <h4 class="mt-24 powered-by">Powered by</h4>
                         <div class="clients-inner section-inner has-animations has-top-divider has-bottom-divider">
                             <ul class="list-reset">
                                 <li class="reveal-from-top" data-reveal-delay="150">
@@ -496,9 +492,9 @@
                     </div>
                 </section>
 
-                <section class="clients section">
+                <section id="sponsors" class="clients section">
                     <div class="container">
-                        <h2 class="mt-24" style="text-align: center">Our sponsors</h2>
+                        <h2 class="mt-24 tac">Our sponsors</h2>
                         <div class="clients-inner section-inner has-animations has-top-divider has-bottom-divider">
                             <ul class="list-reset">
                                 <li class="reveal-from-top" data-reveal-delay="150">
@@ -520,7 +516,7 @@
                                 </li>
                                 <li class="reveal-from-top" data-reveal-delay="450">
                                     <div class="clients-logo">
-                                        <a style="cursor: pointer" onclick="adultContent()"
+                                        <a id="adultCnt" class="cp"
                                             ><img
                                                 class="clients-size-logo"
                                                 src="../sponsors/LuvLounge.png"
@@ -528,17 +524,6 @@
                                         /></a>
                                     </div>
                                 </li>
-                                <script>
-                                    function adultContent() {
-                                        if (
-                                            confirm(
-                                                '18+ WARNING! ADULTS ONLY!\n\nExplicit material for viewing by adults 18 years of age or older. You must be at least 18 years old to access to this site!\n\nProceeding you are agree and confirm to have 18+ year.',
-                                            )
-                                        ) {
-                                            window.open('https://luvlounge.ca', '_blank');
-                                        }
-                                    }
-                                </script>
                                 <li class="reveal-from-top" data-reveal-delay="600">
                                     <div class="clients-logo">
                                         <a href="https://www.questionpro.com" target="_blank"
@@ -559,7 +544,7 @@
                                         /></a>
                                     </div>
                                 </li>
-                                <li class="reveal-from-top" data-reveal-delay="750">
+                                <li class="reveal-from-top" data-reveal-delay="900">
                                     <div class="clients-logo">
                                         <a href="https://crystalsound.ai" target="_blank"
                                             ><img
@@ -569,14 +554,43 @@
                                         /></a>
                                     </div>
                                 </li>
+                                <li class="reveal-from-top" data-reveal-delay="1050">
+                                    <div class="clients-logo">
+                                        <a href="https://cloudron.io" target="_blank"
+                                            ><img
+                                                class="clients-size-logo"
+                                                src="../sponsors/Cloudron.png"
+                                                alt="Cloudron"
+                                        /></a>
+                                    </div>
+                                </li>
+                                <li class="reveal-from-top" data-reveal-delay="1200">
+                                    <div class="clients-logo">
+                                        <a href="https://kiquix.com" target="_blank"
+                                            ><img class="clients-size-logo" src="../sponsors/Kiquix.png" alt="Kiquix"
+                                        /></a>
+                                    </div>
+                                </li>
+                                <li class="reveal-from-top" data-reveal-delay="1350">
+                                    <div class="clients-logo">
+                                        <a
+                                            href="https://lambdatest.com/pricing?coupon=QURFODlQUk9NT1RFUg==&refid=1149848"
+                                            target="_blank"
+                                            ><img
+                                                class="clients-size-logo"
+                                                src="../sponsors/LambdaTest.png"
+                                                alt="LambdaTest"
+                                        /></a>
+                                    </div>
+                                </li>
                             </ul>
                         </div>
                     </div>
                 </section>
 
-                <section class="clients section">
+                <section id="advertisers" class="clients section">
                     <div class="container">
-                        <h2 class="mt-24" style="text-align: center">Our advertisers</h2>
+                        <h2 class="mt-24 tac">Our advertisers</h2>
                         <div class="clients-inner section-inner has-animations has-top-divider has-bottom-divider">
                             <ul class="list-reset">
                                 <li class="reveal-from-top" data-reveal-delay="150">
@@ -595,7 +609,7 @@
                 </section>
             </main>
 
-            <footer class="site-footer center-content-mobile">
+            <footer id="footer" class="site-footer center-content-mobile">
                 <div class="container">
                     <div class="site-footer-inner">
                         <div class="footer-top space-between text-xxs">
@@ -702,21 +716,25 @@
                                         <a href="/privacy">Privacy Policy</a>
                                     </li>
                                     <li>
+                                        <a href="https://p2p.mirotalk.com/api/v1/docs/">Rest API</a>
+                                    </li>
+                                    <li>
                                         <a target="_blank" href="https://www.linkedin.com/in/miroslav-pejic-976a07101/"
                                             >Contact: Miroslav Pejic</a
                                         >
                                     </li>
                                 </ul>
                             </nav>
-                            <div class="footer-copyright">&copy; 2023 MiroTalk, all rights reserved</div>
+                            <div class="footer-copyright">&copy; 2024 MiroTalk, all rights reserved</div>
                         </div>
                     </div>
                 </div>
             </footer>
         </div>
 
+        <script defer src="../js/brand.js"></script>
         <script defer src="../js/landing.js"></script>
-        <script defer src="../js/newRoom.js"></script>
+        <script defer src="../js/common.js"></script>
         <script async defer src="https://buttons.github.io/buttons.js"></script>
     </body>
 </html>
